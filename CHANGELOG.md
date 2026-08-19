@@ -1,5 +1,27 @@
 # openwiki
 
+## 0.4.0
+
+### Minor Changes
+
+- [#581](https://github.com/langchain-ai/openwiki/pull/581) [`fab0a3f`](https://github.com/langchain-ai/openwiki/commit/fab0a3f607a8e193f32672f9f837505c0fc7b6bc) Thanks [@JHSeo-git](https://github.com/JHSeo-git)! - feat: adopt okf v0.2 with code-owned generated provenance
+
+### Patch Changes
+
+- [#459](https://github.com/langchain-ai/openwiki/pull/459) [`21746ce`](https://github.com/langchain-ai/openwiki/commit/21746ce996f3a69898883da58b122770f7dbd668) Thanks [@geonwoo-jeong](https://github.com/geonwoo-jeong)! - feat: configure model output and bedrock stream limits
+
+- [#548](https://github.com/langchain-ai/openwiki/pull/548) [`31dddea`](https://github.com/langchain-ai/openwiki/commit/31dddea4b6d5f3ebdec639d21ca48bcd2a1744e3) Thanks [@GautamSharma99](https://github.com/GautamSharma99)! - fix: run clean updates when the requested output language changes
+
+- [#634](https://github.com/langchain-ai/openwiki/pull/634) [`a943efb`](https://github.com/langchain-ai/openwiki/commit/a943efba15ab81d92ce532cd1228e37ff7b66a75) Thanks [@jyje](https://github.com/jyje)! - feat: add configurable reasoning effort via OPENWIKI_REASONING_EFFORT for supported OpenAI GPT-5.6 and NVIDIA NIM models
+
+- [#660](https://github.com/langchain-ai/openwiki/pull/660) [`bbae2dd`](https://github.com/langchain-ai/openwiki/commit/bbae2dda52de60b23339d3234ee9f8ae57b71c61) Thanks [@JayDataEngineer](https://github.com/JayDataEngineer)! - fix: stream updates instead of messages for openai-compatible providers
+
+- [#656](https://github.com/langchain-ai/openwiki/pull/656) [`f37c70d`](https://github.com/langchain-ai/openwiki/commit/f37c70dbd1949a1b42e06f4218396d373d10baf1) Thanks [@Amzp](https://github.com/Amzp)! - feat: add OPENWIKI_OPENAI_COMPATIBLE_STREAMING=true to force the streaming transport for openai-compatible gateways that return empty content for non-streaming requests
+
+- [#657](https://github.com/langchain-ai/openwiki/pull/657) [`e155526`](https://github.com/langchain-ai/openwiki/commit/e15552657e1ce043f8340d89176a2dc4241c1d6b) Thanks [@Aveek-Saha](https://github.com/Aveek-Saha)! - feat: add static export to openwiki visualizer
+
+- [#647](https://github.com/langchain-ai/openwiki/pull/647) [`46d437a`](https://github.com/langchain-ai/openwiki/commit/46d437a4a2a0ad1d212698a75ec1ddd163c9218f) Thanks [@IstPlayer](https://github.com/IstPlayer)! - fix: refresh .last-update.json timestamp on no-op updates so freshness checks reflect the actual last run, preserving the wiki's persisted language across the refresh
+
 ## 0.3.3
 
 ### Patch Changes
