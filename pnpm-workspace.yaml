@@ -1,6 +1,8 @@
 allowBuilds:
   better-sqlite3: true
   esbuild: true
+  # Only the prebuilt grammar wasm is used; never compile the native binding.
+  tree-sitter-rust: false
 # Force patched versions of transitive dependencies flagged by Dependabot,
 # pnpm audit, or Trivy. js-yaml is pulled in only by @changesets/cli (both
 # majors coexist, so each keeps its own patched line); fast-uri is pulled

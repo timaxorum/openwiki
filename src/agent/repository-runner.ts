@@ -35,6 +35,12 @@ import {
   type RepositoryPageSnapshot,
 } from "../generation/repository-run.js";
 import type { RepositoryRunMode } from "../generation/run-state.js";
+import {
+  buildRustPlanningContext,
+  createListRustItemsTool,
+  isRustRepository,
+  RUST_PAGE_GUIDANCE,
+} from "../languages/rust/index.js";
 import { OPENWIKI_PRODUCER_ACTOR } from "../version.js";
 import {
   AGENT_FILESYSTEM_PERMISSIONS,
@@ -509,7 +515,11 @@ async function runPlanningAgent(
     skills: ["/skills/"],
     subagents: [],
     permissions: AGENT_FILESYSTEM_PERMISSIONS,
-    systemPrompt: createRepositoryPlannerPrompt(view, planningContext),
+    systemPrompt: createRepositoryPlannerPrompt(
+      view,
+      planningContext,
+      await buildRustPlanningContext(run.root, ignore),
+    ),
   });
 
   await streamWorkerTools(
@@ -945,7 +955,7 @@ async function runPageWorkerAttempt(
   const submitPageTool = new DynamicStructuredTool({
     name: "submit_page",
     description:
-      "Complete the assigned page after writing it. Submit only sparse Claim decisions: confirmedClaimIds for rechecked issue Claims kept unchanged, claims for revisions/additions, and retractedClaimIds for removals. Other current Claims are retained automatically. Evidence must use repo://<repository-relative-path>, optionally with #Lx-Ly.",
+      "Complete the assigned page after writing it. Submit only sparse Claim decisions: confirmedClaimIds for rechecked issue Claims kept unchanged, claims for revisions/additions, and retractedClaimIds for removals. Other current Claims are retained automatically. Evidence must use repo://<repository-relative-path>, optionally with #Lx-Ly, or #item=<item path> for Rust (.rs) files.",
     schema: ClaimReconciliationSchema,
     func: async (reconciliation, _runManager, config) => {
       if (submitted) {
@@ -977,11 +987,16 @@ async function runPageWorkerAttempt(
     },
   });
 
+  const rustRepository = await isRustRepository(run.root);
   const backend = createAgentBackend(wikiBackend);
   const agent = createDeepAgent({
     name: workerAgentName(job.path),
     model,
-    tools: [inspectClaimsTool, submitPageTool],
+    tools: [
+      inspectClaimsTool,
+      submitPageTool,
+      ...(rustRepository ? [createListRustItemsTool(run.root, ignore)] : []),
+    ],
     backend,
     middleware: [
       createFilesystemMiddleware({
@@ -998,6 +1013,7 @@ async function runPageWorkerAttempt(
       job,
       run.state.plan?.pages ?? [],
       run.state.language,
+      rustRepository ? RUST_PAGE_GUIDANCE : undefined,
     ),
   });
 

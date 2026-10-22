@@ -1,10 +1,19 @@
 import path from "node:path";
+import {
+  canonicalizeRustItemPath,
+  isRustSourcePath,
+} from "../../../languages/rust/item-path.js";
 import { EvidenceResourceError } from "../../core/errors.js";
 
 /**
  * Repository evidence URI prefix.
  */
 export const REPOSITORY_EVIDENCE_PREFIX = "repo://";
+
+/**
+ * Fragment prefix selecting a named Rust item instead of a line range.
+ */
+export const RUST_ITEM_FRAGMENT_PREFIX = "item=";
 
 /**
  * Inclusive one-based source line range.
@@ -36,6 +45,14 @@ export interface RepositoryEvidenceResource {
    * @default undefined, which selects whole-file evidence.
    */
   range?: RepositoryLineRange;
+
+  /**
+   * Optional canonical Rust item path, such as `Ledger::post`. Mutually
+   * exclusive with {@link range}, and only valid for `.rs` files.
+   *
+   * @default undefined, which selects line-range or whole-file evidence.
+   */
+  item?: string;
 }
 
 /**
@@ -58,8 +75,17 @@ export function formatRepositoryEvidenceResource(
       "Repository evidence contains an invalid Unicode sequence.",
     );
   }
+  if (resource.range !== undefined && resource.item !== undefined) {
+    throw new EvidenceResourceError(
+      "Repository evidence cannot select both a line range and an item.",
+    );
+  }
   const fragment =
-    resource.range === undefined ? undefined : formatLineRange(resource.range);
+    resource.item !== undefined
+      ? `${RUST_ITEM_FRAGMENT_PREFIX}${encodeItemFragment(resource.item)}`
+      : resource.range === undefined
+        ? undefined
+        : formatLineRange(resource.range);
 
   const formatted = `${REPOSITORY_EVIDENCE_PREFIX}${encodedPath}${
     fragment === undefined ? "" : `#${fragment}`
@@ -67,7 +93,8 @@ export function formatRepositoryEvidenceResource(
   const parsed = parseRepositoryEvidenceResource(formatted);
   if (
     parsed.path !== resource.path ||
-    !areLineRangesEqual(parsed.range, resource.range)
+    !areLineRangesEqual(parsed.range, resource.range) ||
+    parsed.item !== resource.item
   ) {
     throw new EvidenceResourceError(
       `Repository evidence is not normalized: ${formatted}`,
@@ -77,7 +104,7 @@ export function formatRepositoryEvidenceResource(
 }
 
 /**
- * Parses and validates a `repo://path#Lx-Ly` resource.
+ * Parses and validates a `repo://path#Lx-Ly` or `repo://path.rs#item=Path` resource.
  *
  * @param resource - Repository evidence URI to parse.
  * @returns Canonical repository path and optional line range.
@@ -156,6 +183,12 @@ export function parseRepositoryEvidenceResource(
       `Evidence cannot reference Git metadata or generated OpenWiki output: ${resource}`,
     );
   }
+  if (decodedFragment?.startsWith(RUST_ITEM_FRAGMENT_PREFIX)) {
+    return {
+      path: normalized,
+      item: parseItemFragment(normalized, decodedFragment, resource),
+    };
+  }
   const range =
     decodedFragment === undefined
       ? undefined
@@ -165,6 +198,46 @@ export function parseRepositoryEvidenceResource(
     path: normalized,
     ...(range === undefined ? {} : { range }),
   };
+}
+
+/**
+ * Parses an `item=` fragment into a canonical Rust item path.
+ *
+ * @param filePath - Normalized repository-relative path.
+ * @param fragment - Decoded fragment beginning with `item=`.
+ * @param resource - Complete resource used in diagnostics.
+ * @returns Canonical item path.
+ */
+function parseItemFragment(
+  filePath: string,
+  fragment: string,
+  resource: string,
+): string {
+  if (!isRustSourcePath(filePath)) {
+    throw new EvidenceResourceError(
+      `Item evidence is only supported for Rust (.rs) files: ${resource}`,
+    );
+  }
+  const item = canonicalizeRustItemPath(
+    fragment.slice(RUST_ITEM_FRAGMENT_PREFIX.length),
+  );
+  if (item === null) {
+    throw new EvidenceResourceError(
+      `Evidence item must be a Rust item path such as #item=Ledger::post: ${resource}`,
+    );
+  }
+  return item;
+}
+
+/**
+ * Percent-encodes only the characters that cannot appear raw in an item
+ * fragment, keeping paths such as `<Ledger as Display>::fmt` readable.
+ *
+ * @param item - Canonical item path.
+ * @returns Encoded fragment value.
+ */
+function encodeItemFragment(item: string): string {
+  return item.replace(/[%#\s]/gu, (character) => encodeURIComponent(character));
 }
 
 /**

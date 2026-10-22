@@ -14,11 +14,13 @@ import type { PageJob } from "../generation/run-state.js";
  *
  * @param view - Durable begin/resume context projected for planning.
  * @param planningContext - Actual user and connector context for this run.
+ * @param languageContext - Computed language-pack context, such as a Rust crate map.
  * @returns Complete planner system prompt.
  */
 export function createRepositoryPlannerPrompt(
   view: ActiveBeginView,
   planningContext?: string,
+  languageContext?: string,
 ): string {
   const updateContext =
     view.mode === "update"
@@ -38,6 +40,10 @@ ${formatIssues(view.claimIssues)}`
 
   const semanticContext = planningContext
     ? `\nUser and connector planning context:\n${planningContext}\n`
+    : "";
+
+  const computedLanguageContext = languageContext
+    ? `\n${languageContext}\n`
     : "";
 
   const scopedUpdateContext =
@@ -92,7 +98,7 @@ An update with no required page edits and no deletions may submit pages: [].
 For every page provide a concise purpose and useful seedPaths. seedPaths are
 starting points, not research boundaries. Copy only relevant global constraints
 from the user/connector context into that page's instructions array; do not copy
-unrelated context into every job.${semanticContext}${scopedUpdateContext}${updateContext}
+unrelated context into every job.${computedLanguageContext}${semanticContext}${scopedUpdateContext}${updateContext}
 
 ${view.wikiGoal ? `Repository OpenWiki instructions:\n${view.wikiGoal}\n` : ""}`;
 }
@@ -124,12 +130,14 @@ export type RepositoryPageWorkerJob = PageJob & {
  * @param job - Assigned page and its compact required Claim context.
  * @param allPages - Complete ordered page queue for quickstart navigation.
  * @param language - Resolved output language for generated prose.
+ * @param languageGuidance - Language-pack guidance, such as Rust item evidence.
  * @returns Complete page-worker system prompt.
  */
 export function createRepositoryPagePrompt(
   job: RepositoryPageWorkerJob,
   allPages: readonly PageJob[],
   language: string,
+  languageGuidance?: string,
 ): string {
   return `You own exactly ${job.path}.
 
@@ -183,7 +191,7 @@ one successful submission.
 ${CLAIMS_SUBSTANCE_GUIDANCE}
 
 ${CLAIMS_RECONCILIATION_GUIDANCE}
-
+${languageGuidance ? `\n${languageGuidance}\n` : ""}
 This page currently owns ${job.existingClaimCount} Claim(s). Claims requiring an
 explicit decision in this job:\n${JSON.stringify(job.claimsRequiringAttention, null, 2)}
 

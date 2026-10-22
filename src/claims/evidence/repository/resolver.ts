@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import { OpenWikiIgnore } from "../../../agent/openwiki-ignore.js";
+import { resolveRustItem } from "../../../languages/rust/items.js";
 import {
   EvidenceResolutionError,
   EvidenceResourceError,
@@ -234,6 +235,9 @@ export class RepositoryEvidenceResolver implements EvidenceResolver {
       );
     }
 
+    if (parsed.item !== undefined) {
+      return resolveRustItemEvidence(canonicalResource, source, parsed.item);
+    }
     if (!parsed.range) {
       return createWholeFileEvidence(canonicalResource, source);
     }
@@ -282,6 +286,31 @@ export class RepositoryEvidenceResolver implements EvidenceResolver {
     );
     return this.realRootDirPromise;
   }
+}
+
+/**
+ * Resolves a named Rust item. Item evidence needs no relocation metadata: the
+ * item is found by name wherever it moves within the file, and its version is
+ * a fingerprint of its syntax tokens, so only real edits to the item make the
+ * evidence stale.
+ *
+ * @param resource - Canonical item resource.
+ * @param source - Complete current Rust source.
+ * @param itemPath - Canonical item path.
+ * @returns Current item evidence, or `null` when the item no longer exists.
+ */
+async function resolveRustItemEvidence(
+  resource: string,
+  source: string,
+  itemPath: string,
+): Promise<ResolvedEvidence | null> {
+  const resolved = await resolveRustItem(source, itemPath);
+  return resolved
+    ? {
+        evidence: { resource, version: resolved.version },
+        content: resolved.content,
+      }
+    : null;
 }
 
 /**

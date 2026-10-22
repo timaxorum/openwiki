@@ -216,4 +216,28 @@ describe("repository worker prompts", () => {
       createRepositoryPagePrompt(allPages[1], allPages, "en"),
     ).not.toContain("The complete planned page map is:");
   });
+
+  test("includes computed language context only when provided", () => {
+    const withRust = createRepositoryPlannerPrompt(
+      planningView({ mode: "init" }),
+      undefined,
+      "Rust workspace map (computed by OpenWiki from Cargo.toml files; nothing was built or executed):",
+    );
+
+    expect(withRust).toContain("Rust workspace map");
+    expect(
+      createRepositoryPlannerPrompt(planningView({ mode: "init" })),
+    ).not.toContain("Rust workspace map");
+  });
+
+  test("appends language guidance to page workers only when provided", () => {
+    const job = pageJob();
+
+    expect(
+      createRepositoryPagePrompt(job, [job], "en", "Rust repository guidance:"),
+    ).toContain("Rust repository guidance:");
+    expect(createRepositoryPagePrompt(job, [job], "en")).not.toContain(
+      "Rust repository guidance:",
+    );
+  });
 });

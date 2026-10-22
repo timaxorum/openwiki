@@ -110,6 +110,17 @@ const harness = vi.hoisted(() => ({
   restoreCalls: 0,
   streamConfigs: [] as Array<{ configurable?: Record<string, unknown> }>,
   workerExitsWithoutSubmit: 0,
+  rustRepository: false,
+}));
+
+vi.mock("../../src/languages/rust/index.js", () => ({
+  RUST_PAGE_GUIDANCE: "Rust repository guidance: cite items.",
+  buildRustPlanningContext: () =>
+    Promise.resolve(
+      harness.rustRepository ? "Rust workspace map: `ledger`" : undefined,
+    ),
+  isRustRepository: () => Promise.resolve(harness.rustRepository),
+  createListRustItemsTool: () => ({ name: "list_rust_items" }),
 }));
 
 vi.mock("deepagents", async (importOriginal) => {
@@ -665,6 +676,7 @@ beforeEach(() => {
   harness.restoreCalls = 0;
   harness.pageRestoreCalls = 0;
   harness.workerExitsWithoutSubmit = 0;
+  harness.rustRepository = false;
 });
 
 describe("runNativeRepositoryGeneration", () => {
@@ -710,6 +722,25 @@ describe("runNativeRepositoryGeneration", () => {
     expect(events).toContainEqual(
       expect.objectContaining({ type: "tool_start", name: "write_file" }),
     );
+  });
+
+  test("adds the Rust crate map, guidance, and item tool only for Rust repositories", async () => {
+    harness.rustRepository = true;
+
+    await runHarness();
+
+    expect(String(harness.agentOptions[0]?.systemPrompt)).toContain(
+      "Rust workspace map: `ledger`",
+    );
+    expect(pagePrompt(1)).toContain("Rust repository guidance: cite items.");
+    expect(harness.agentOptions[1]?.tools.map(({ name }) => name)).toEqual([
+      "inspect_claims",
+      "submit_page",
+      "list_rust_items",
+    ]);
+    expect(
+      harness.agentOptions[0]?.tools.map(({ name }) => name),
+    ).not.toContain("list_rust_items");
   });
 
   test("maps a newly changed source path through planning into a new page job", async () => {
