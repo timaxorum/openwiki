@@ -50,12 +50,14 @@ export function isRustSourcePath(filePath: string): boolean {
  * Normalizes whitespace in type or path text.
  *
  * @param text - Raw type or path text.
- * @returns Text with whitespace removed around punctuation and collapsed elsewhere.
+ * @returns Text with whitespace removed around punctuation, exactly one space
+ *   on each side of `as`, and single spaces elsewhere.
  */
 export function canonicalizeTypeText(text: string): string {
   return text
     .replace(/\s+/gu, " ")
     .replace(/\s*(::|<|>|,|&|\(|\)|\[|\]|;|!|\.)\s*/gu, "$1")
+    .replace(/\s*\bas\b\s*/gu, " as ")
     .trim();
 }
 

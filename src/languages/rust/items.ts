@@ -362,7 +362,9 @@ function implSegment(node: Node): string | undefined {
     return typeName;
   }
   const negative = node.children.some((child) => child?.type === "!");
-  return `<${typeName} as ${negative ? "!" : ""}${traitName(trait)}>`;
+  return canonicalizeTypeText(
+    `<${typeName} as ${negative ? "!" : ""}${traitName(trait)}>`,
+  );
 }
 
 /**

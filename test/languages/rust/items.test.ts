@@ -132,6 +132,29 @@ describe("listRustItems", () => {
     ).toHaveLength(1);
   });
 
+  test("lists only paths that canonicalize to themselves and resolve", async () => {
+    const source = `${SOURCE}
+impl IntoResponse for () {}
+impl IntoResponse for [u8] {}
+impl<R> IntoResponse for (StatusCode, R) {}
+impl<K, V, const N: usize> IntoResponse for [(K, V); N] {}
+`;
+    const items = await listRustItems(source);
+
+    expect(items.map((item) => item.path)).toEqual(
+      expect.arrayContaining([
+        "<() as IntoResponse>",
+        "<[u8] as IntoResponse>",
+        "<(StatusCode,R) as IntoResponse>",
+        "<[(K,V);N] as IntoResponse>",
+      ]),
+    );
+    for (const item of items) {
+      expect(canonicalizeRustItemPath(item.path)).toBe(item.path);
+      expect(await resolveRustItem(source, item.path)).not.toBeNull();
+    }
+  });
+
   test("does not expose items nested inside function bodies", async () => {
     const paths = (await listRustItems(SOURCE)).map((item) => item.path);
 
@@ -227,6 +250,8 @@ describe("canonicalizeRustItemPath", () => {
     ["< Ledger  as  Display > :: fmt", "<Ledger as Display>::fmt"],
     ["<Ledger as From< u8 >>", "<Ledger as From<u8>>"],
     ["impl   Ledger", "impl Ledger"],
+    ["<Ledger as!Sync>", "<Ledger as !Sync>"],
+    ["<( ) as IntoResponse>", "<() as IntoResponse>"],
     ["Reader::r#async", "Reader::async"],
   ])("canonicalizes %j", (input, expected) => {
     expect(canonicalizeRustItemPath(input)).toBe(expected);
