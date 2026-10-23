@@ -806,7 +806,8 @@
       ],
       "tempting": 3,
       "notes": "Same author (hawkw) for both; a prerequisite PR (#4630 task IDs) was merged between them. The rejection is about crate placement / API commitment.",
-      "role": "primary"
+      "role": "primary",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "tokio-3516",
@@ -873,7 +874,8 @@
       "notes": "Same author (krallin); the accepted PR was opened during the review discussion (parallel). Rejected PR targeted v0.2.x, accepted targeted 1.x master, so file layouts differ. Key rejection voice (jonhoo) was a Tokio contributor/reviewer.",
       "role": "primary",
       "problem_original": "Deeply nested `FuturesUnordered` workloads where most leaf futures are ready suffer from Tokio's cooperative scheduling budget: forced yields cause huge numbers of useless polls (observed ~50% CPU in `wake_by_ref` from `poll_proceed`). Users need a way to opt out of cooperative scheduling for code that does not work well with it.",
-      "problem_edit": "'For code' points at the per-future opt-out that was accepted."
+      "problem_edit": "'For code' points at the per-future opt-out that was accepted.",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "tokio-6224",
@@ -928,7 +930,8 @@
       ],
       "tempting": 2,
       "notes": "Rejected PR stalled after review; it was closed by Darksonn as 'added in #6786'. The objections are API-shape/naming, recorded months before #6786.",
-      "role": "primary"
+      "role": "primary",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "tokio-4238",
@@ -1003,7 +1006,8 @@
       "notes": "Inverse of tokio-4538: here the accepted design moved INTO tokio core because efficient implementation needs task internals. Accepted PR (by maintainer) was opened while the rejected one was still open; review comments predate it.",
       "role": "primary",
       "problem_original": "Issue #3903: users want a collection that owns a set of spawned tasks, lets them await whichever task finishes next, and aborts the remaining tasks when the collection is dropped. Provide such a task-set type with efficient (not O(n) per completion) waiting.",
-      "problem_edit": "The parenthetical is the reviewers' objection to the rejected design."
+      "problem_edit": "The parenthetical is the reviewers' objection to the rejected design.",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "tokio-3105",
@@ -1065,7 +1069,8 @@
       ],
       "tempting": 2,
       "notes": "Accepted PR opened by the reviewer minutes before closing the rejected one; the 'serious unsafe' concern predates it by six weeks.",
-      "role": "primary"
+      "role": "primary",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "tokio-3639",
@@ -1131,7 +1136,8 @@
       ],
       "tempting": 2,
       "notes": "Rejected PR is not a pure spin in its final revision (it also parks), so the diff-level difference is mostly block.rs bit-tricks vs a list-level Busy result. Accepted PR opened by the reviewer while rejected PR was open.",
-      "role": "primary"
+      "role": "primary",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "tokio-3375",
@@ -1188,7 +1194,8 @@
       "notes": "Rejected PR stalled and was closed after the accepted one merged (closure reason: 'since #4299 was merged'), but the design objection (bool vs io::Result<bool>) was recorded in Jan 2021, before #4299 was opened. Problem statement's last clause hints at the answer; drop 'handling errors such as permission denied correctly' for a harder variant. Part of the critique came from a non-member (Kixunil).",
       "role": "primary",
       "problem_original": "Issue #3373: `tokio::fs` lacks an async equivalent of checking whether a path exists (std offers `Path::exists`), so users write `fs::metadata(path).await.is_ok()`. Add an async function to `tokio::fs` for checking whether a path exists, handling errors such as permission denied correctly.",
-      "problem_edit": "The clause about permission-denied errors is the maintainers' objection to the rejected design."
+      "problem_edit": "The clause about permission-denied errors is the maintainers' objection to the rejected design.",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "tokio-3097",
@@ -1258,7 +1265,8 @@
       "notes": "Accepted PR continues maintainer draft #3549 and was opened (by an Embark contributor, merged by davidpdrsn) after the shutdown objection; the rejected PR was closed only later. Big multi-file change; harder eval case.",
       "role": "primary",
       "problem_original": "Issues #2965/#3096: code that only has a `tokio::runtime::Handle` (not the owning `Runtime`) cannot block on a future, e.g. when implementing a synchronous trait from inside a thread that has a handle. Add the ability to block on a future through a runtime `Handle`, with well-defined behaviour when the runtime is shut down while something is blocked through a handle.",
-      "problem_edit": "The clause is the maintainers' objection to the rejected design."
+      "problem_edit": "The clause is the maintainers' objection to the rejected design.",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     }
   ],
   "rejected_candidates": [
