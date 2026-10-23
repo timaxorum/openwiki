@@ -11,6 +11,8 @@
  * count of what was left out.
  */
 import { execFileSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { gunzipSync } from "node:zlib";
 import type { Annotation, LineageEvent, LineageIndex } from "./types.ts";
 
 /**
@@ -56,6 +58,35 @@ export interface Brief {
   shown: string[];
   /** Pull requests of rejected attempts shown. */
   rejectedPrs: number[];
+}
+
+/**
+ * Loads a lineage index from `.json` or `.json.gz`.
+ */
+export async function loadIndex(file: string): Promise<LineageIndex> {
+  const raw = await readFile(file);
+  const text = file.endsWith(".gz")
+    ? gunzipSync(raw).toString("utf8")
+    : raw.toString("utf8");
+  return JSON.parse(text) as LineageIndex;
+}
+
+/**
+ * Keeps only the events and annotations visible at `asOf`, so a run cannot
+ * see later history even by accident.
+ */
+export function sliceIndex(index: LineageIndex, asOf: AsOf): LineageIndex {
+  const events = index.events.filter((event) =>
+    isVisible(event, index.annotations, asOf),
+  );
+  const prs = new Set(events.map((event) => String(event.pr)));
+  return {
+    ...index,
+    events,
+    annotations: Object.fromEntries(
+      Object.entries(index.annotations).filter(([pr]) => prs.has(pr)),
+    ),
+  };
 }
 
 /**

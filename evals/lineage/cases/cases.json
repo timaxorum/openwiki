@@ -155,10 +155,7 @@
         "merged_at": "2023-04-17T11:20:18Z",
         "approach": "Adds a `mime_response!` macro in axum-extra/src/response/mod.rs generating `Html<T>`, `Css<T>`, `JavaScript<T>`, `Wasm<T>` newtypes whose `IntoResponse` impl is bounded on `T: IntoResponse` (so streaming bodies work), each setting its content type.",
         "url": "https://github.com/tokio-rs/axum/pull/1921",
-        "files": [
-          "axum-extra/CHANGELOG.md",
-          "axum-extra/src/response/mod.rs"
-        ],
+        "files": ["axum-extra/CHANGELOG.md", "axum-extra/src/response/mod.rs"],
         "base_sha": "24f8dc53f49d8946418f103314ab6a31ff68be5c"
       },
       "ordering": {
@@ -245,11 +242,7 @@
         ],
         "reviewer": "davidpdrsn",
         "url": "https://github.com/tokio-rs/axum/pull/377",
-        "files": [
-          "src/extract/form.rs",
-          "src/extract/mod.rs",
-          "src/json.rs"
-        ]
+        "files": ["src/extract/form.rs", "src/extract/mod.rs", "src/json.rs"]
       },
       "accepted": {
         "pr": 378,
@@ -377,9 +370,7 @@
         ],
         "reviewer": "jplatte",
         "url": "https://github.com/tokio-rs/axum/pull/3308",
-        "files": [
-          "axum/src/routing/path_router.rs"
-        ]
+        "files": ["axum/src/routing/path_router.rs"]
       },
       "accepted": {
         "pr": 3319,
@@ -433,10 +424,7 @@
         ],
         "reviewer": "davidpdrsn",
         "url": "https://github.com/tokio-rs/axum/pull/496",
-        "files": [
-          "axum/Cargo.toml",
-          "axum/src/routing/mod.rs"
-        ]
+        "files": ["axum/Cargo.toml", "axum/src/routing/mod.rs"]
       },
       "accepted": {
         "pr": 500,
@@ -444,10 +432,7 @@
         "merged_at": "2021-11-11T18:22:26Z",
         "approach": "Adds `Router::panic_on_matchit_error(&self, err: matchit::InsertError)` which, when the router has nested at root, panics with a message telling the user to use `Router::fallback` instead; keeps `nest(\"/\", _)` non-working. Adds tests `good_error_message_if_using_nest_root` and `..._when_merging` in axum/src/routing/tests/mod.rs.",
         "url": "https://github.com/tokio-rs/axum/pull/500",
-        "files": [
-          "axum/src/routing/mod.rs",
-          "axum/src/routing/tests/mod.rs"
-        ],
+        "files": ["axum/src/routing/mod.rs", "axum/src/routing/tests/mod.rs"],
         "base_sha": "fb8156f17cc1d6a67e8d908a90db7c3946eb76b8"
       },
       "ordering": {
@@ -1163,10 +1148,7 @@
         ],
         "reviewer": "Darksonn, carllerche",
         "url": "https://github.com/tokio-rs/tokio/pull/3375",
-        "files": [
-          "tokio/src/fs/exists.rs",
-          "tokio/src/fs/mod.rs"
-        ]
+        "files": ["tokio/src/fs/exists.rs", "tokio/src/fs/mod.rs"]
       },
       "accepted": {
         "pr": 4299,

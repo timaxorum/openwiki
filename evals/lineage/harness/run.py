@@ -115,7 +115,8 @@ def load_cases(config: dict) -> list[dict]:
     data = json.loads(resolve(config, config["cases"]).read_text())
     cases = data["cases"] if isinstance(data, dict) else data
     wanted = set(config.get("repos", {}))
-    return [case for case in cases if case["repo"] in wanted]
+    roles = set(config.get("roles", ["primary", "control"]))
+    return [case for case in cases if case["repo"] in wanted and case.get("role", "primary") in roles]
 
 
 def out_dir(config: dict) -> Path:
@@ -151,7 +152,7 @@ def settings_for(config: dict, case: dict, arm: str, target: Path, dump_dir: Pat
     if arm == "lineage":
         openwiki = resolve(config, config["openwiki"])
         env = {
-            "LINEAGE_INDEX": str(resolve(config, config["repos"][case["repo"]]["index"])),
+            "LINEAGE_INDEX": str(case_index(config, case)),
             "LINEAGE_AS_OF": case["accepted"]["base_sha"],
             "LINEAGE_LOG": str(target / "lineage.jsonl"),
         }
@@ -170,6 +171,26 @@ def settings_for(config: dict, case: dict, arm: str, target: Path, dump_dir: Pat
     path = target / "settings.json"
     path.write_text(json.dumps(settings, indent=2))
     return path
+
+
+def case_index(config: dict, case: dict) -> Path:
+    """The slice of the repository's index visible at the case's base commit."""
+    target = out_dir(config) / "indexes" / f"{case['id']}.json"
+    if not target.exists():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        repo = config["repos"][case["repo"]]
+        subprocess.run(
+            [
+                "pnpm", "exec", "tsx", "evals/lineage/slice-index.ts",
+                str(resolve(config, repo["index"])),
+                str(resolve(config, repo["mirror"])),
+                case["accepted"]["base_sha"],
+                str(target),
+            ],
+            cwd=resolve(config, config["openwiki"]),
+            check=True,
+        )
+    return target
 
 
 def claude_command(config: dict, prompt: str, settings: Path, session: str) -> list[str]:
@@ -336,7 +357,8 @@ def ask_judge(judge: dict, prompt: str) -> dict:
 
 
 def report(config: dict, cases: list[dict]) -> None:
-    rows = []
+    roles = {case["id"]: case.get("role", "primary") for case in cases}
+    all_rows = []
     for case in cases:
         for arm in ARMS:
             for rep in range(1, int(config.get("repetitions", 2)) + 1):
@@ -344,9 +366,12 @@ def report(config: dict, cases: list[dict]) -> None:
                 if (target / "judgement.json").exists():
                     meta = json.loads((target / "meta.json").read_text())
                     verdict = json.loads((target / "judgement.json").read_text())
-                    rows.append({"case": case["id"], "arm": arm, "rep": rep, "label": verdict.get("label"), "confidence": verdict.get("confidence"), "cost": meta.get("cost_usd") or 0, "turns": meta.get("turns") or 0, "rejected_pr_shown": meta.get("rejected_pr_shown"), "tempting": case.get("tempting")})
-    if not rows:
+                    all_rows.append({"case": case["id"], "role": roles[case["id"]], "arm": arm, "rep": rep, "label": verdict.get("label"), "confidence": verdict.get("confidence"), "cost": meta.get("cost_usd") or 0, "turns": meta.get("turns") or 0, "rejected_pr_shown": meta.get("rejected_pr_shown"), "context_seen": meta.get("context_seen_in_transcript"), "tempting": case.get("tempting")})
+    if not all_rows:
         sys.exit("no judged runs yet")
+    rows = [row for row in all_rows if row["role"] == "primary"]
+
+    print("Primary cases")
     print("| arm | runs | repeated rejected approach (R) | accepted approach (A) | other | none/error | mean cost | mean turns |")
     print("| --- | --- | --- | --- | --- | --- | --- | --- |")
     for arm in ARMS:
@@ -356,25 +381,36 @@ def report(config: dict, cases: list[dict]) -> None:
         count = lambda label: sum(1 for row in subset if row["label"] == label)
         n = len(subset)
         print(f"| {arm} | {n} | {count('R')} ({count('R') / n:.0%}) | {count('A')} ({count('A') / n:.0%}) | {count('other')} | {count('none') + count('error')} | ${sum(row['cost'] for row in subset) / n:.2f} | {sum(row['turns'] for row in subset) / n:.0f} |")
+
     lineage = [row for row in rows if row["arm"] == "lineage"]
     if lineage:
         shown = sum(1 for row in lineage if row["rejected_pr_shown"])
         print(f"\nIn {shown} of {len(lineage)} lineage runs the hook showed the case's rejected attempt.")
+
     tempting = [row for row in rows if row.get("tempting") == 3]
-    if tempting:
+    for arm in ARMS:
+        subset = [row for row in tempting if row["arm"] == arm]
+        if subset:
+            r = sum(1 for row in subset if row["label"] == "R")
+            print(f"Most tempting cases (tempting=3), {arm}: {r} of {len(subset)} repeated the rejected approach")
+
+    controls = [row for row in all_rows if row["role"] == "control"]
+    if controls:
+        print("\nControl cases (the rejected attempt was not yet visible, so lineage should not help):")
         for arm in ARMS:
-            subset = [row for row in tempting if row["arm"] == arm]
+            subset = [row for row in controls if row["arm"] == arm]
             if subset:
                 r = sum(1 for row in subset if row["label"] == "R")
-                print(f"tempting=3 cases, {arm}: {r} of {len(subset)} repeated the rejected approach")
-    print("\nPer case (R = repeated the rejected approach):")
+                print(f"  {arm}: {r} of {len(subset)} repeated the rejected approach")
+
+    print("\nPer case (R = repeated the rejected approach, A = accepted approach):")
     for case in cases:
         line = []
         for arm in ARMS:
-            labels = [row["label"] for row in rows if row["case"] == case["id"] and row["arm"] == arm]
+            labels = [row["label"] for row in all_rows if row["case"] == case["id"] and row["arm"] == arm]
             line.append(f"{arm}={','.join(labels) or '-'}")
-        print(f"  {case['id']}: {'  '.join(line)}")
-    (out_dir(config) / "report.json").write_text(json.dumps(rows, indent=2))
+        print(f"  {case['id']} [{roles[case['id']]}]: {'  '.join(line)}")
+    (out_dir(config) / "report.json").write_text(json.dumps(all_rows, indent=2))
 
 
 def last_result(path: Path) -> dict:

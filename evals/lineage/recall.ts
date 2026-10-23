@@ -11,7 +11,7 @@
  *   pnpm exec tsx evals/lineage/recall.ts <repo> <index.json> <cases.json>
  */
 import { readFile } from "node:fs/promises";
-import { briefForFiles, resolveAsOf } from "./assemble.ts";
+import { briefForFiles, resolveAsOf, loadIndex } from "./assemble.ts";
 import type { LineageIndex } from "./types.ts";
 
 interface Case {
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   if (!repo || !indexPath || !casesPath) {
     throw new Error("Usage: recall.ts <repo> <index.json> <cases.json>");
   }
-  const index = JSON.parse(await readFile(indexPath, "utf8")) as LineageIndex;
+  const index = await loadIndex(indexPath);
   const { cases } = JSON.parse(await readFile(casesPath, "utf8")) as {
     cases: Case[];
   };

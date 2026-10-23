@@ -19,6 +19,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
+import { loadIndex } from "./assemble.ts";
 import type { Annotation, LineageIndex } from "./types.ts";
 
 interface Reason {
@@ -67,7 +68,7 @@ async function main(): Promise<void> {
       "Usage: annotate.ts <index.json> <cases.json> --repo <owner/name> --mirror <path> [--extra file ...] [--out file]",
     );
   }
-  const index = JSON.parse(await readFile(indexPath, "utf8")) as LineageIndex;
+  const index = await loadIndex(indexPath);
   const cases = (
     JSON.parse(await readFile(casesPath, "utf8")) as { cases: MinedCase[] }
   ).cases.filter((item) => item.repo === repo);

@@ -17,7 +17,7 @@ import { execFileSync } from "node:child_process";
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { briefForFiles, resolveAsOf } from "./assemble.ts";
+import { briefForFiles, resolveAsOf, loadIndex } from "./assemble.ts";
 import type { LineageIndex } from "./types.ts";
 
 /**
@@ -77,7 +77,7 @@ async function main(): Promise<void> {
   seen.add(relative);
   await writeFile(seenPath, JSON.stringify([...seen]));
 
-  const index = JSON.parse(await readFile(indexPath, "utf8")) as LineageIndex;
+  const index = await loadIndex(indexPath);
   const asOf = resolveAsOf(root, asOfSha);
   const brief = briefForFiles(index, [relative], asOf);
 
