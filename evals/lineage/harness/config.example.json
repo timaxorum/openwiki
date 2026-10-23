@@ -1,0 +1,25 @@
+{
+  "cases": "../cases/cases.json",
+  "openwiki": "../../..",
+  "out": "results",
+  "repetitions": 2,
+  "seed": 7,
+  "repos": {
+    "tokio-rs/axum": {
+      "mirror": "~/eval-mirrors/axum",
+      "index": "../cases/axum-index.json"
+    }
+  },
+  "agent": {
+    "claude": "claude",
+    "model": "claude-opus-5-5",
+    "setting_sources": "project,local",
+    "max_turns": 60,
+    "max_budget_usd": 5
+  },
+  "judge": {
+    "claude": "claude",
+    "model": "claude-opus-5-5",
+    "max_diff_chars": 60000
+  }
+}
