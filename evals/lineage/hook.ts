@@ -13,6 +13,7 @@
  *
  * The hook never blocks a tool call: on any error it logs and exits 0 with no output.
  */
+import { execFileSync } from "node:child_process";
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -53,8 +54,16 @@ async function main(): Promise<void> {
   const cwd = input.cwd ?? process.cwd();
   if (!indexPath || !asOfSha || !filePath || !input.hook_event_name) return;
 
+  // The agent may have changed directory; paths are relative to the repo root.
+  const root = execFileSync(
+    "git",
+    ["-C", cwd, "rev-parse", "--show-toplevel"],
+    {
+      encoding: "utf8",
+    },
+  ).trim();
   const relative = path
-    .relative(cwd, path.resolve(cwd, filePath))
+    .relative(root, path.resolve(cwd, filePath))
     .split(path.sep)
     .join("/");
   if (relative.startsWith("..") || path.isAbsolute(relative)) return;
@@ -69,7 +78,7 @@ async function main(): Promise<void> {
   await writeFile(seenPath, JSON.stringify([...seen]));
 
   const index = JSON.parse(await readFile(indexPath, "utf8")) as LineageIndex;
-  const asOf = resolveAsOf(cwd, asOfSha);
+  const asOf = resolveAsOf(root, asOfSha);
   const brief = briefForFiles(index, [relative], asOf);
 
   await log({
