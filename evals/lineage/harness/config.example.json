@@ -4,10 +4,15 @@
   "out": "results",
   "repetitions": 2,
   "seed": 7,
+  "roles": ["primary", "control"],
   "repos": {
     "tokio-rs/axum": {
       "mirror": "~/eval-mirrors/axum",
-      "index": "../cases/axum-index.json"
+      "index": "../cases/axum-index.json.gz"
+    },
+    "tokio-rs/tokio": {
+      "mirror": "~/eval-mirrors/tokio",
+      "index": "../cases/tokio-index.json.gz"
     }
   },
   "agent": {

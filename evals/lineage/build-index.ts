@@ -58,7 +58,9 @@ async function main(): Promise<void> {
 
   for (const commit of commits) {
     if (!commit.parent) continue;
-    const pr = /\(#(\d+)\)\s*$/u.exec(commit.subject)?.[1];
+    const pr =
+      /\(#(\d+)\)\s*$/u.exec(commit.subject)?.[1] ??
+      /^Merge pull request #(\d+)/u.exec(commit.subject)?.[1];
     if (pr) mergedPrs.add(Number(pr));
     const change = await describeChange(git, commit.parent, commit.sha);
     if (!change) continue;
@@ -74,6 +76,9 @@ async function main(): Promise<void> {
     });
   }
 
+  // A PR merged with a merge commit has its head on the branch.
+  const onBranch = new Set(git("rev-list", branch).trim().split("\n"));
+
   const prRefs = git(
     "for-each-ref",
     "--format=%(refname:strip=3) %(objectname)",
@@ -87,7 +92,11 @@ async function main(): Promise<void> {
       return { pr: Number(number), sha };
     })
     .filter(
-      ({ pr }) => Number.isInteger(pr) && pr >= minPr && !mergedPrs.has(pr),
+      ({ pr, sha }) =>
+        Number.isInteger(pr) &&
+        pr >= minPr &&
+        !mergedPrs.has(pr) &&
+        !onBranch.has(sha),
     );
 
   for (const { pr, sha } of prRefs) {

@@ -129,6 +129,7 @@ async function main(): Promise<void> {
         cases.some((item) => String(item.rejected.pr) === pr)
       )
         continue;
+      if ((annotation as { merged?: boolean }).merged) continue;
       index.annotations[pr] = { ...index.annotations[pr], ...annotation };
       extras += 1;
     }
