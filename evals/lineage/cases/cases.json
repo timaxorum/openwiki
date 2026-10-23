@@ -57,7 +57,8 @@
       ],
       "tempting": 2,
       "notes": "Same author (jplatte, a maintainer) closed it himself after agreeing to move it out of core. axum-extra did not exist yet when #509 was written but does exist at the accepted PR's base, so an agent at that base can see it. The rejection is about placement/API stability, not behaviour.",
-      "role": "primary"
+      "role": "primary",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "axum-1083",
@@ -115,7 +116,8 @@
       "notes": "Both PRs by the primary maintainer (davidpdrsn); the rejection is a self-reconsideration recorded in a comment. A similar `RequestExt` trait was added to axum much later (0.7), so the rejection is time-dependent.",
       "role": "primary",
       "problem_original": "Users writing middleware frequently ask how to run extractors (e.g. `Extension<T>`, `TypedHeader`, custom auth extractors) inside middleware. Today the only way is to manually construct `RequestParts` and invoke the extractor, which is undiscoverable and verbose. Make it straightforward to use extractors from middleware written with axum's middleware helpers.",
-      "problem_edit": "Points at the accepted change to middleware::from_fn."
+      "problem_edit": "Points at the accepted change to middleware::from_fn.",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "axum-1920",
@@ -153,7 +155,10 @@
         "merged_at": "2023-04-17T11:20:18Z",
         "approach": "Adds a `mime_response!` macro in axum-extra/src/response/mod.rs generating `Html<T>`, `Css<T>`, `JavaScript<T>`, `Wasm<T>` newtypes whose `IntoResponse` impl is bounded on `T: IntoResponse` (so streaming bodies work), each setting its content type.",
         "url": "https://github.com/tokio-rs/axum/pull/1921",
-        "files": ["axum-extra/CHANGELOG.md", "axum-extra/src/response/mod.rs"],
+        "files": [
+          "axum-extra/CHANGELOG.md",
+          "axum-extra/src/response/mod.rs"
+        ],
         "base_sha": "24f8dc53f49d8946418f103314ab6a31ff68be5c"
       },
       "ordering": {
@@ -168,7 +173,8 @@
       ],
       "tempting": 3,
       "notes": "WEAK case: the rejected PR was superseded by the maintainer within hours; the main difference is the trait bound (and scope: one type vs four). The axum-core vs axum-extra placement was already fixed inside the rejected PR after review.",
-      "role": "primary"
+      "role": "primary",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "axum-2301",
@@ -217,7 +223,8 @@
       ],
       "tempting": 3,
       "notes": "The accepted 'fix' is a regression test, i.e. the right answer is 'no special-casing needed'. Useful for testing whether agents add ad-hoc special cases; awkward for tests that grade code changes. Accepted PR was opened ~1 minute before the rejection comment.",
-      "role": "control"
+      "role": "control",
+      "role_reason": "The objection was posted after the accepted work began, so history at the base commit could not show it."
     },
     {
       "id": "axum-377",
@@ -238,7 +245,11 @@
         ],
         "reviewer": "davidpdrsn",
         "url": "https://github.com/tokio-rs/axum/pull/377",
-        "files": ["src/extract/form.rs", "src/extract/mod.rs", "src/json.rs"]
+        "files": [
+          "src/extract/form.rs",
+          "src/extract/mod.rs",
+          "src/json.rs"
+        ]
       },
       "accepted": {
         "pr": 378,
@@ -266,7 +277,8 @@
       ],
       "tempting": 2,
       "notes": "Maintainer superseded the contributor's PR within 10 minutes. Very old layout (single crate, src/ at repo root).",
-      "role": "primary"
+      "role": "primary",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "axum-2476",
@@ -343,7 +355,8 @@
       "notes": "Both authored by maintainers. The rejection is purely about semver (breaking vs patch); the Sync-bound variant was intended for 0.8 later. The rejection reason lives in another PR's (#2481) description. Rejected files include #2473's changes because #2476 was stacked on it.",
       "role": "primary",
       "problem_original": "Issue #2449: request throughput regressed significantly in axum 0.7 for routers with many routes, partly because the `Router` (and its route table) is cloned per connection/request. Make cloning a `Router` cheap, and ship it in a way that can go out in a 0.7.x patch release.",
-      "problem_edit": "The clause is the rejection reason (semver)."
+      "problem_edit": "The clause is the rejection reason (semver).",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "axum-3308",
@@ -364,7 +377,9 @@
         ],
         "reviewer": "jplatte",
         "url": "https://github.com/tokio-rs/axum/pull/3308",
-        "files": ["axum/src/routing/path_router.rs"]
+        "files": [
+          "axum/src/routing/path_router.rs"
+        ]
       },
       "accepted": {
         "pr": 3319,
@@ -391,7 +406,8 @@
       ],
       "tempting": 3,
       "notes": "Maintainer wrote the accepted PR minutes before closing the rejected one.",
-      "role": "control"
+      "role": "control",
+      "role_reason": "The objection was posted after the accepted work began, so history at the base commit could not show it."
     },
     {
       "id": "axum-496",
@@ -417,7 +433,10 @@
         ],
         "reviewer": "davidpdrsn",
         "url": "https://github.com/tokio-rs/axum/pull/496",
-        "files": ["axum/Cargo.toml", "axum/src/routing/mod.rs"]
+        "files": [
+          "axum/Cargo.toml",
+          "axum/src/routing/mod.rs"
+        ]
       },
       "accepted": {
         "pr": 500,
@@ -425,7 +444,10 @@
         "merged_at": "2021-11-11T18:22:26Z",
         "approach": "Adds `Router::panic_on_matchit_error(&self, err: matchit::InsertError)` which, when the router has nested at root, panics with a message telling the user to use `Router::fallback` instead; keeps `nest(\"/\", _)` non-working. Adds tests `good_error_message_if_using_nest_root` and `..._when_merging` in axum/src/routing/tests/mod.rs.",
         "url": "https://github.com/tokio-rs/axum/pull/500",
-        "files": ["axum/src/routing/mod.rs", "axum/src/routing/tests/mod.rs"],
+        "files": [
+          "axum/src/routing/mod.rs",
+          "axum/src/routing/tests/mod.rs"
+        ],
         "base_sha": "fb8156f17cc1d6a67e8d908a90db7c3946eb76b8"
       },
       "ordering": {
@@ -440,7 +462,8 @@
       ],
       "tempting": 2,
       "notes": "Rejected PR by jplatte (co-maintainer), accepted by davidpdrsn. Problem statement must not mention 'error message' or 'fallback' to avoid leaking the answer.",
-      "role": "primary"
+      "role": "primary",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "axum-911",
@@ -496,7 +519,8 @@
       ],
       "tempting": 2,
       "notes": "Same author (npmccallum) opened both; #921 was opened as an alternative while #911 was still under review (parallel, not sequential). Maintainer picked #921.",
-      "role": "control"
+      "role": "primary",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "axum-1681",
@@ -547,9 +571,10 @@
       ],
       "tempting": 3,
       "notes": "The problem with the rejected approach was found by its author in-thread and the maintainer chose the fix; the problem statement above mentions the GET constraint, which makes the case easier — drop that sentence to make it harder. #1683 opened before #1681 closed.",
-      "role": "control",
+      "role": "primary",
       "problem_original": "When the `Form` extractor fails to deserialize a syntactically valid but semantically invalid request body (e.g. a missing or wrongly-typed field), axum responds with 400 Bad Request. For request bodies, 422 Unprocessable Entity is the more appropriate status (and matches `Json`). Note that `Form` also reads from the query string for GET/HEAD requests, where 400 must remain the status (see discussion in #1378). Adjust the status codes accordingly.",
-      "problem_edit": "The sentence is the reason the rejected approach failed."
+      "problem_edit": "The sentence is the reason the rejected approach failed.",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "axum-1655",
@@ -605,7 +630,8 @@
       ],
       "tempting": 2,
       "notes": "Both PRs by davidpdrsn. The rejected PR's head ref was later force-reset (same branch name `multipart-stream` reused for #1692), so its diff is not recoverable from refs/pull/1655/head; files listed are inferred.",
-      "role": "primary"
+      "role": "excluded",
+      "role_reason": "The rejected PR branch was later force-reset upstream, so its diff and touched items cannot be recovered."
     },
     {
       "id": "axum-1766",
@@ -665,7 +691,8 @@
       ],
       "tempting": 2,
       "notes": "Both by davidpdrsn on the unreleased v0.7.0 branch (base_sha is on that branch, not main). Earlier contributor PR #1699 ('StreamBody responds with Bytes, not Result') is a related rejected attempt. Breaking-change context: only acceptable because 0.7 was in development.",
-      "role": "primary"
+      "role": "primary",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "axum-3464",
@@ -717,7 +744,8 @@
       "notes": "Clean sequential case: same author, rejected closed before accepted opened. The problem statement hints at 'custom handling for unmatched methods'; removing that phrase makes it harder.",
       "role": "primary",
       "problem_original": "Some applications expose undocumented internal endpoints and want requests with an unsupported HTTP method to look like 404 Not Found without revealing which methods are supported. Currently `MethodRouter` always adds an `Allow` header listing the supported methods when a method is not matched, even when the application has configured custom handling for unmatched methods. Make it possible to avoid leaking the `Allow` header in that setup.",
-      "problem_edit": "The clause points at the accepted mechanism (method_not_allowed_fallback)."
+      "problem_edit": "The clause points at the accepted mechanism (method_not_allowed_fallback).",
+      "role_reason": "The rejected attempt and its reason are visible at the accepted base commit."
     },
     {
       "id": "tokio-4538",
@@ -1129,7 +1157,10 @@
         ],
         "reviewer": "Darksonn, carllerche",
         "url": "https://github.com/tokio-rs/tokio/pull/3375",
-        "files": ["tokio/src/fs/exists.rs", "tokio/src/fs/mod.rs"]
+        "files": [
+          "tokio/src/fs/exists.rs",
+          "tokio/src/fs/mod.rs"
+        ]
       },
       "accepted": {
         "pr": 4299,
