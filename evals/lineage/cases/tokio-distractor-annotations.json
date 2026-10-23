@@ -1,0 +1,418 @@
+{
+  "1654": {
+    "title": "Merge `tokio-sync` into the main crate",
+    "summary": "Draft that moves the `tokio-sync` crate's primitives into the main `tokio` crate as a `sync` module and updates dependent crates and imports.",
+    "url": "https://github.com/tokio-rs/tokio/pull/1654",
+    "closedAt": "2019-10-30T03:25:45Z"
+  },
+  "2016": {
+    "title": "rt: add optional throttling to BasicScheduler",
+    "summary": "Adds an optional `max_throttling` duration to the runtime builder; when set with the basic scheduler, `BasicScheduler` runs a `tick_throttling` loop that sleeps between timer/I/O polls, and the `time::Driver` gains a mode that fires timers within the current time frame.",
+    "url": "https://github.com/tokio-rs/tokio/pull/2016",
+    "closedAt": "2020-04-28T21:23:31Z"
+  },
+  "2047": {
+    "title": "Issue #1845: Initial support for Simulation in Tokio",
+    "summary": "Draft adding deterministic simulation support: the time driver advances a mocked clock instead of parking, and `TcpStream`/`TcpListener` wrap their `PollEvented` in an enum so simulated `SimTcpStream`/`SimTcpListener` can be swapped in via the I/O driver handle.",
+    "url": "https://github.com/tokio-rs/tokio/pull/2047",
+    "closedAt": "2020-02-14T08:27:43Z"
+  },
+  "2153": {
+    "title": "WIP: Add task::scope",
+    "summary": "Adds `task::scope` and `task::scope_with_options` for structured concurrency, cancelling child tasks when the scope exits, built on new `CancellationToken` and `WaitGroup` primitives adapted from futures-intrusive.",
+    "url": "https://github.com/tokio-rs/tokio/pull/2153",
+    "closedAt": "2020-05-31T02:21:56Z"
+  },
+  "2306": {
+    "title": "syscalls: #1845 Introduce unstable Syscall trait.",
+    "summary": "Introduces a `Syscalls` trait, gated behind `test-util` and `--cfg tokio_unstable`, letting users plug in an alternate runtime/I/O backend (e.g. a `UdpResource` routed through the trait) for simulation testing.",
+    "url": "https://github.com/tokio-rs/tokio/pull/2306",
+    "closedAt": "2020-11-10T17:53:06Z"
+  },
+  "2347": {
+    "merged": true
+  },
+  "2481": {
+    "title": "Add `is_closed` for MPSC channel",
+    "summary": "Adds `is_closed` to the mpsc `Sender`/`Receiver` (bounded and unbounded) by checking the channel's `tx_count` and the `rx_closed` flag in `chan::Tx`/`chan::Rx`.",
+    "url": "https://github.com/tokio-rs/tokio/pull/2481",
+    "closedAt": "2020-09-13T14:44:46Z"
+  },
+  "2516": {
+    "title": "Create rust-audit.yml",
+    "summary": "Adds a GitHub Actions workflow running `cargo audit` on PRs, pushes to master and nightly to flag dependencies with known security advisories.",
+    "url": "https://github.com/tokio-rs/tokio/pull/2516",
+    "closedAt": "2020-06-07T03:46:50Z"
+  },
+  "2576": {
+    "title": "WIP: task::scope",
+    "summary": "Adds `task::scope` for structured concurrency with explicit scope handles: `Scope::detached`, `Scope::with_parent`, a `child()` method, and `Scope::with_config`/`ScopeConfigBuilder` for configuring cancellation behavior.",
+    "reason": "I'm going to close this now as there is no way forward. More details here https://github.com/tokio-rs/tokio/issues/2596#issuecomment-663349217",
+    "by": "carllerche",
+    "url": "https://github.com/tokio-rs/tokio/pull/2576#issuecomment-663349969",
+    "closedAt": "2020-07-24T05:13:23Z"
+  },
+  "2579": {
+    "title": "WIP: task::scope using implicit scopes",
+    "summary": "Alternative `task::scope` implementation where scopes propagate implicitly through task-local storage, with `scope::spawn` and `scope::spawn_cancellable` attaching children to the current scope without a `ScopeHandle`.",
+    "reason": "I'm going to close this now as there is no way forward. More details here https://github.com/tokio-rs/tokio/issues/2596#issuecomment-663349217",
+    "by": "carllerche",
+    "url": "https://github.com/tokio-rs/tokio/pull/2579#issuecomment-663349848",
+    "closedAt": "2020-07-24T05:12:53Z"
+  },
+  "2713": {
+    "title": "Remove intrusive_double_linked_list and cancellation_token",
+    "summary": "Deletes the `intrusive_double_linked_list` utility and the `sync::CancellationToken` that had been added in anticipation of structured concurrency.",
+    "url": "https://github.com/tokio-rs/tokio/pull/2713",
+    "closedAt": "2020-07-30T05:13:50Z"
+  },
+  "2755": {
+    "title": "Add buffer len channel",
+    "summary": "Draft that adds a `buffer_len`-style method to the bounded mpsc channel reporting how many messages are currently buffered, based on the semaphore's available permits.",
+    "url": "https://github.com/tokio-rs/tokio/pull/2755",
+    "closedAt": "2020-10-20T12:04:38Z"
+  },
+  "2763": {
+    "title": "Make JoinHandle must_use (#2762)",
+    "summary": "Adds `#[must_use]` to `task::JoinHandle` so ignoring a spawned task's handle (and a possible panic in its `JoinError`) triggers a warning.",
+    "reason": "Closing this as it needs a more thorough discussion, and if accepted, probably involves more changes than just this.",
+    "by": "Darksonn",
+    "url": "https://github.com/tokio-rs/tokio/pull/2763#issuecomment-687646740",
+    "closedAt": "2020-09-05T18:39:55Z"
+  },
+  "2824": {
+    "title": "Add simple hard cancellation",
+    "summary": "Adds a `CancellationToken::wrap_future` adapter (`Wrapped` future that races the token against a future) and an `into_cancelled` method returning a `'static` cancellation future, changing `WaitForCancellationFuture` to hold a `Cow` of the token.",
+    "reason": "I'm going to close the PR since it would need to be completely rewritten at this point, but if you are still interested in these features, please open an issue and I would be happy to discuss it.",
+    "by": "Darksonn",
+    "url": "https://github.com/tokio-rs/tokio/pull/2824#issuecomment-1126526372",
+    "closedAt": "2022-05-13T21:34:51Z"
+  },
+  "2948": {
+    "title": "rt: Switch `rt-threaded` to `rt-multi-thread`",
+    "summary": "Renames the `rt-threaded` cargo feature to `rt-multi-thread` across tokio's manifests, cfg macros and docs.",
+    "url": "https://github.com/tokio-rs/tokio/pull/2948",
+    "closedAt": "2020-10-12T19:27:48Z"
+  },
+  "3004": {
+    "title": "tokio: add tracing to Runtime::spawn_blocking",
+    "summary": "Moves the tracing span from `task::spawn_blocking` into `runtime::spawn_blocking` so that both entry points emit a tracing span for blocking tasks.",
+    "reason": "Moving the tracing integration around isn't the right call here though. We should either copy it or move that into Handle",
+    "by": "Keruspe",
+    "url": "https://github.com/tokio-rs/tokio/pull/3004#discussion_r508645957",
+    "closedAt": "2020-10-21T18:00:49Z"
+  },
+  "3097": {
+    "title": "rt: move block_on to handle",
+    "summary": "Moves the `block_on` implementation from `Runtime` onto `runtime::Handle`, adding `Handle::block_on` so code with only a handle (e.g. under `#[tokio::main]`) can block on a future, with `Runtime::block_on` delegating to it.",
+    "reason": "A handle should not hold ownership of any of the scheduler components (like the task queue).",
+    "by": "LucioFranco",
+    "url": "https://github.com/tokio-rs/tokio/pull/3097#issuecomment-784500332",
+    "closedAt": "2021-03-16T19:58:03Z"
+  },
+  "3207": {
+    "merged": true
+  },
+  "3211": {
+    "title": "Add unwind feature flag",
+    "summary": "Adds an `unwind` cargo feature that removes the `catch_unwind` from the task harness so panics in spawned (including detached) tasks propagate, to make tests fail fast.",
+    "reason": "If I understand the PR correctly, I don't think the feature flag is **additive**. feature flags should not change the behavior of code, only add new APIs or change internal runtime details.",
+    "by": "carllerche",
+    "url": "https://github.com/tokio-rs/tokio/pull/3211#issuecomment-738466689",
+    "closedAt": "2020-12-04T00:17:32Z"
+  },
+  "3215": {
+    "merged": true
+  },
+  "3218": {
+    "title": "Implement a test scheduler that propagates panics",
+    "summary": "Adds a new test-oriented scheduler that does not capture unwinds, letting panics from detached tasks bubble up instead of being caught in the task harness.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3218",
+    "closedAt": "2022-06-28T14:18:28Z"
+  },
+  "3226": {
+    "title": "time: fix panic on multithreaded runtime shutdown",
+    "summary": "Works around a panic during multi-threaded runtime shutdown by having the time driver's parker bypass the timer once shutdown has been called, since all core threads share the same park.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3226",
+    "closedAt": "2020-12-07T22:29:47Z"
+  },
+  "3227": {
+    "merged": true
+  },
+  "3236": {
+    "merged": true
+  },
+  "3265": {
+    "title": "Accidental PR please ignore",
+    "summary": "Opened against `v0.3.x` from a `pr-3159` branch; it reworks `Worker::release` in the thread-pool scheduler so releasing a task outside a worker context no longer panics with \"scheduler context missing\", and adds a `task_abort` test for issue #3157.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3265",
+    "closedAt": "2020-12-12T07:06:37Z"
+  },
+  "3273": {
+    "merged": true
+  },
+  "3288": {
+    "title": "time: Add `SystemTime` to `tokio::time`",
+    "summary": "Draft that adds a `SystemTime` type to `tokio::time` whose clock follows tokio's pausable/mockable time, so wall-clock time can be controlled in tests.",
+    "reason": "Closing this for now as we won't include it in tokio 1.0",
+    "by": "LucioFranco",
+    "url": "https://github.com/tokio-rs/tokio/pull/3288#issuecomment-748204039",
+    "closedAt": "2020-12-18T16:57:43Z"
+  },
+  "3291": {
+    "title": "Remove io::util::Async{Read,Write}Ext",
+    "summary": "Removes the `AsyncReadExt` and `AsyncWriteExt` extension traits, moving their helper methods (e.g. `read_buf`, `write_all`) onto the `io::AsyncRead` and `io::AsyncWrite` traits themselves.",
+    "reason": "Because of the object safety issues, we are going to keep things as they are.",
+    "by": "carllerche",
+    "url": "https://github.com/tokio-rs/tokio/pull/3291#issuecomment-748495273",
+    "closedAt": "2020-12-19T16:30:55Z"
+  },
+  "3293": {
+    "title": "Move io::util::AsyncBufReadExt methods to io::AsyncBufRead",
+    "summary": "Draft that moves the `AsyncBufReadExt` helper methods onto the `io::AsyncBufRead` trait and removes the extension trait.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3293",
+    "closedAt": "2020-12-19T16:50:45Z"
+  },
+  "3322": {
+    "title": "[Experiment] Semver trick",
+    "summary": "Experimental draft on the v0.3.x branch that reimplements tokio 0.3's executor, time and I/O driver in terms of tokio 1.0 and re-exports the 1.0 I/O traits, so 0.3 and 1.0 users share one runtime.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3322",
+    "closedAt": "2021-02-22T22:12:17Z"
+  },
+  "3330": {
+    "title": "Improve Sleep documentation for !Unpin",
+    "summary": "Replaces the `pin_project` on `time::Sleep` with a hand-written `project` method so rustdoc shows `Sleep` as `!Unpin` instead of a confusing blanket `Unpin` impl.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3330",
+    "closedAt": "2021-01-21T11:54:50Z"
+  },
+  "3353": {
+    "title": "Replace deprecated compare_and_swap with compare_exchange",
+    "summary": "Replaces uses of the deprecated `Atomic*::compare_and_swap` with `compare_exchange` across several tokio modules.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3353",
+    "closedAt": "2020-12-27T07:46:36Z"
+  },
+  "3367": {
+    "title": "Re-allow zero blocking threads with warnings, panic in blocking spawner",
+    "summary": "Re-allows `runtime::Builder::max_blocking_threads(0)` by adding a separate `spawn_core` path for worker threads and making the blocking pool panic with an explanatory message when `spawn_blocking` or `block_in_place` is called with zero extra-thread capacity.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3367",
+    "closedAt": "2021-01-22T19:54:27Z"
+  },
+  "3392": {
+    "title": "builder: disable io and timer running w/ miri",
+    "summary": "Makes the runtime `Builder` skip enabling the I/O and time drivers when compiled under Miri (`cfg(miri)`), so tokio can run in Miri.",
+    "reason": "Per @RalfJung (https://github.com/tokio-rs/tokio/issues/3360#issuecomment-756961362) the Miri cfg does not sound like it is intended to be used by libs. I am inclined to not make this change.",
+    "by": "carllerche",
+    "url": "https://github.com/tokio-rs/tokio/pull/3392#issuecomment-757352995",
+    "closedAt": "2021-01-09T19:44:14Z"
+  },
+  "3422": {
+    "title": "Use triomphe to optimize sync primitives",
+    "summary": "Adds an optional `triomphe` feature and an internal `Arc` wrapper that delegates to `triomphe::Arc` (no weak count) or `std::sync::Arc`, used by the sync primitives.",
+    "reason": "At this point, we are not going to add additional dependencies or feature flags. We could consider including our own Arc implementation, but we should demonstrate value with benchmarks.",
+    "by": "carllerche",
+    "url": "https://github.com/tokio-rs/tokio/pull/3422#issuecomment-760365616",
+    "closedAt": "2021-01-14T18:03:47Z"
+  },
+  "3459": {
+    "title": "tokio: add document annotation for missing timer panics",
+    "summary": "Adds a doc section to `runtime/builder.rs` noting that using timers panics when the runtime was built without `enable_time`/`enable_all`.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3459",
+    "closedAt": "2021-01-24T02:07:41Z"
+  },
+  "3460": {
+    "merged": true
+  },
+  "3461": {
+    "merged": true
+  },
+  "3477": {
+    "merged": true
+  },
+  "3478": {
+    "merged": true
+  },
+  "3479": {
+    "merged": true
+  },
+  "3496": {
+    "title": "Replace deprecated spin_loop_hint",
+    "summary": "Replaces the deprecated `std::sync::atomic::spin_loop_hint` with `std::hint::spin_loop` in tokio's spin loops.",
+    "reason": "`hint::spin_loop` (alternative to `spin_loop_hint`) requires Rust 1.49+, so I would prefer to ignore deprecated warnings for now.",
+    "by": "taiki-e",
+    "url": "https://github.com/tokio-rs/tokio/pull/3496#issuecomment-770778995",
+    "closedAt": "2021-02-01T11:33:27Z"
+  },
+  "3513": {
+    "title": "Add OnceCell and Lazy",
+    "summary": "Adds async-aware `sync::OnceCell` and `sync::Lazy` types (modelled on `std::lazy`) whose values are initialized by an async function, built on a semaphore.",
+    "reason": "The reason I asked for it is that I find the history here overwhelmingly large, which makes the PR difficult to review. Even if there is consensus on the API, I would still like to split the PR into two.",
+    "by": "Darksonn",
+    "url": "https://github.com/tokio-rs/tokio/pull/3513#issuecomment-791492050",
+    "closedAt": "2021-05-05T13:22:00Z"
+  },
+  "3516": {
+    "title": "coop: allow disabling cooperative scheduling",
+    "summary": "Adds a runtime builder option (on the v0.2.x branch) to turn off cooperative scheduling budgets, so `coop::poll_proceed` never forces yields, motivated by excessive polling in nested `FuturesUnordered`.",
+    "reason": "I'm worried about the next user of tokio that comes along, finds some problem that they think is due to coop, throw in a `no_coop()` call on their runtime constructor, and then forgets about it. And then complains about weird tail latency spikes in tokio :)",
+    "by": "jonhoo",
+    "url": "https://github.com/tokio-rs/tokio/pull/3516#issuecomment-786168288",
+    "closedAt": "2021-03-21T08:35:35Z"
+  },
+  "3549": {
+    "title": "rt: add Handle::block_on",
+    "summary": "Draft adding `runtime::Handle::block_on`, which enters the runtime context and blocks the current thread on a future without driving a current-thread scheduler.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3549",
+    "closedAt": "2021-03-09T17:43:18Z"
+  },
+  "3658": {
+    "title": "task block_in_place doc can run in sync code",
+    "summary": "Edits the `task::block_in_place` docs to mention that it can be called from synchronous code and can replace `thread::spawn` in some cases.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3658",
+    "closedAt": "2021-05-05T19:44:13Z"
+  },
+  "3692": {
+    "title": "io: Add `tokio::io::Asyncify`",
+    "summary": "Draft extracting the blocking-threadpool machinery behind `tokio::fs::File` into a generic `tokio::io::Asyncify` wrapper that makes any `io::{Read, Write, Seek}` async, with `File` becoming a thin wrapper around `Asyncify<std::fs::File>`.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3692",
+    "closedAt": "2023-02-12T11:58:33Z"
+  },
+  "3708": {
+    "title": "Test for shutdown of runtime in `Handle::spawn `",
+    "summary": "Makes `Handle::spawn` and `Handle::spawn_blocking` check the blocking spawner's `shutdown` flag and return a new `JoinError::DroppedRuntime` when the runtime has been dropped.",
+    "reason": "Adding a check in spawn like that is going to be vulnerable to races. Instead, the \"shutdown\" check needs to happen atomically when pushing into the queue.",
+    "by": "carllerche",
+    "url": "https://github.com/tokio-rs/tokio/pull/3708#issuecomment-822663605",
+    "closedAt": "2021-05-26T14:00:12Z"
+  },
+  "3713": {
+    "title": "sync: add mpsc::{UnboundReceiver,Receiver}::sender()",
+    "summary": "Adds `sender()` methods on mpsc `Receiver` and `UnboundedReceiver` that create a new `Sender` for the same channel from the receiving half.",
+    "reason": "Dropping all senders signals the channel is closed, so if there is a `Receiver::sender()` fn, it would either have to fail when the channel is closed or it would have to re-open the channel. Neither seem great when one can pass a Sender around.",
+    "by": "carllerche",
+    "url": "https://github.com/tokio-rs/tokio/pull/3713#issuecomment-822708548",
+    "closedAt": "2021-04-19T22:53:25Z"
+  },
+  "3751": {
+    "title": "sync: resize bounded channels",
+    "summary": "Adds a method on the bounded mpsc `Receiver` that resizes the channel's capacity after creation, so a receiver can accept more buffered messages than initially configured.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3751",
+    "closedAt": "2021-05-05T11:56:22Z"
+  },
+  "3778": {
+    "title": "sync: resize bounded channels",
+    "summary": "Second attempt at a receiver-side method to resize a bounded mpsc channel's capacity, tracking capacity reductions in the receiver instead of with an extra atomic.",
+    "reason": "Unfortunately, I still think the implementation is too complicated. The mpsc channel is already really complicated, probably too complicated, and adding even more complexity to the channel is something I want to avoid.",
+    "by": "Darksonn",
+    "url": "https://github.com/tokio-rs/tokio/pull/3778#issuecomment-957510779",
+    "closedAt": "2021-11-02T12:57:45Z"
+  },
+  "3871": {
+    "title": "a sketch for how task naming might work for tracing",
+    "summary": "Draft adding an unstable, `cfg_trace`-gated `tokio::task::spawn_named(name, future)` that records a task name on the task's tracing span for tokio-console.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3871",
+    "closedAt": "2021-06-21T17:45:35Z"
+  },
+  "3884": {
+    "title": "refactor: Add some helpers for BufMut/ReadBuf juggling",
+    "summary": "Adds internal helper functions for converting between `bytes::BufMut` and `ReadBuf` to deduplicate unsafe buffer-handling code in tokio and tokio-util.",
+    "url": "https://github.com/tokio-rs/tokio/pull/3884",
+    "closedAt": "2021-11-09T15:36:14Z"
+  },
+  "3908": {
+    "title": "Add a task set",
+    "summary": "Adds a `TaskSet` type that spawns tasks and yields their results as they finish via `try_poll_next_finished`, polling all stored `JoinHandle`s each time.",
+    "reason": "We are going to want an implementation that is not quadratic. Also, the mutex is unnecessary.",
+    "by": "Darksonn",
+    "url": "https://github.com/tokio-rs/tokio/pull/3908#issuecomment-871664462",
+    "closedAt": "2022-02-08T09:00:33Z"
+  },
+  "3909": {
+    "merged": true
+  },
+  "3920": {
+    "merged": true
+  },
+  "3934": {
+    "merged": true
+  },
+  "3942": {
+    "merged": true
+  },
+  "3943": {
+    "merged": true
+  },
+  "3955": {
+    "merged": true
+  },
+  "3959": {
+    "merged": true
+  },
+  "3969": {
+    "merged": true
+  },
+  "3970": {
+    "merged": true
+  },
+  "3971": {
+    "merged": true
+  },
+  "3972": {
+    "merged": true
+  },
+  "3980": {
+    "merged": true
+  },
+  "4025": {
+    "title": "Replace deprecated spin_loop_hint",
+    "summary": "Replaces the deprecated `spin_loop_hint` with `std::hint::spin_loop` and raises the minimum supported Rust version to 1.49 accordingly.",
+    "reason": "Honestly, we can just keep the MSRV as is until we actually need to bump it.",
+    "by": "Darksonn",
+    "url": "https://github.com/tokio-rs/tokio/pull/4025#issuecomment-892818779",
+    "closedAt": "2021-08-12T08:08:45Z"
+  },
+  "4168": {
+    "title": "ci: attempt to fix labeler bot",
+    "summary": "Draft changing the GitHub Actions labeler workflow and its configuration to fix the bot that auto-labels pull requests (issue #4164).",
+    "url": "https://github.com/tokio-rs/tokio/pull/4168",
+    "closedAt": "2021-10-13T12:29:46Z"
+  },
+  "4237": {
+    "merged": true
+  },
+  "4244": {
+    "title": "Add generic trait to combine UnixListener and TcpListener",
+    "summary": "Adds to tokio-util a `Listener` trait (with `accept()` and `local_addr()`) implemented for `TcpListener` and `UnixListener`, plus a combined `ListenAddr` type and an `AsyncReadWrite` helper trait for boxed streams.",
+    "reason": "I'm closing this because the implementation is going in the wrong direction and there hasn't been any activity for a while.",
+    "by": "Darksonn",
+    "url": "https://github.com/tokio-rs/tokio/pull/4244#issuecomment-990904497",
+    "closedAt": "2021-12-10T11:47:33Z"
+  },
+  "4390": {
+    "title": "net: fix TcpSocket bugs introduced in #4270",
+    "summary": "Fixes `TcpSocket` regressions from the mio 0.8 upgrade, notably handling `EINPROGRESS` on connect, and adds assertions plus a CI job running hyper's test suite against tokio.",
+    "reason": "I'm going to close this PR since the changes being fixed were reverted and the CI improvements were merged separately.",
+    "by": "carllerche",
+    "url": "https://github.com/tokio-rs/tokio/pull/4390#issuecomment-1010420560",
+    "closedAt": "2022-01-11T22:35:09Z"
+  },
+  "4434": {
+    "merged": true
+  },
+  "4615": {
+    "title": "Reduce pthread key usage",
+    "summary": "Introduces a `UnifiedThreadLocal` struct and an API-compatible `unified_thread_local!` macro that merge several of tokio's `thread_local!` variables into one, to use fewer pthread keys on platforms with a low `PTHREAD_KEYS_MAX`.",
+    "url": "https://github.com/tokio-rs/tokio/pull/4615",
+    "closedAt": "2022-10-21T09:32:35Z"
+  },
+  "4716": {
+    "merged": true
+  },
+  "6172": {
+    "title": "chore: rename docsrs to avoid conflicts (relates #6165)",
+    "summary": "Renames tokio's internal `docsrs` cfg flag to a tokio-specific name across the crates so that other crates enabling `docsrs` do not accidentally activate tokio's docs-only code paths.",
+    "reason": "I actually think that it's preferable to keep `docsrs`. That way, downstream crates can access Windows items in Tokio when generating docs on Linux.",
+    "by": "Darksonn",
+    "url": "https://github.com/tokio-rs/tokio/pull/6172#issuecomment-1872546598",
+    "closedAt": "2023-12-30T15:16:23Z"
+  }
+}

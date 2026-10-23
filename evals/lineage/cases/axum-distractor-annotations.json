@@ -1,0 +1,352 @@
+{
+  "30": {
+    "title": "Add `Multipart` extractor for consuming `multipart/form-data` requests",
+    "summary": "Adds a hand-written `Multipart` extractor (with `next_part()` returning streamable parts) so handlers can consume `multipart/form-data` request bodies.",
+    "reason": "Just discovered https://crates.io/crates/multer. Seems more sensible to use that. Its also way faster than this implementation.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/30#issuecomment-879865294",
+    "closedAt": "2021-07-14T12:53:09Z"
+  },
+  "94": {
+    "title": "Make imports consistent.",
+    "summary": "Reorders and groups `use` statements across 34 files into std / external crate / local blocks for a consistent import style.",
+    "reason": "Until rustfmt stable is able to automatically format imports the way we want I'm reluctant to change the formatting as it creates churn and will not be maintained unless done automatically.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/94#issuecomment-891578870",
+    "closedAt": "2021-08-03T06:50:20Z"
+  },
+  "266": {
+    "title": "feat: add some inline attributes to tower::Service to improve performance",
+    "summary": "Adds `#[inline]` attributes to `tower::Service` method impls (`poll_ready`, `call`) across several axum services to enable cross-crate inlining.",
+    "url": "https://github.com/tokio-rs/axum/pull/266",
+    "closedAt": "2021-08-30T09:20:09Z"
+  },
+  "509": {
+    "title": "Add Json::erased constructor",
+    "summary": "Adds a `Json::erased` constructor producing `Json<Box<serde_json::value::RawValue>>` from any `Serialize` value, plus a `JsonSerializationError` type implementing `IntoResponse`, so handlers can return type-erased JSON.",
+    "reason": "Maybe we should release this as a tiny standalone crate 🤷 Then we can more easily ~~break~~ change things.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/509#issuecomment-971403834",
+    "closedAt": "2021-11-17T19:34:55Z"
+  },
+  "530": {
+    "merged": true
+  },
+  "532": {
+    "merged": true
+  },
+  "644": {
+    "merged": true
+  },
+  "648": {
+    "title": "Add trait IntoResponseHeaders",
+    "summary": "Draft that introduces an `IntoResponseHeaders` trait in axum-core and reworks the tuple `IntoResponse` impls so header-producing types (e.g. `Headers`, `TypedHeader`) can be combined with response bodies.",
+    "url": "https://github.com/tokio-rs/axum/pull/648",
+    "closedAt": "2021-12-21T12:08:49Z"
+  },
+  "687": {
+    "title": "Don't silently swallow errors in `OriginalUri` extractor",
+    "summary": "Makes the `OriginalUri` extractor return a rejection when extraction fails instead of silently falling back, since failure may indicate a programmer error.",
+    "url": "https://github.com/tokio-rs/axum/pull/687",
+    "closedAt": "2022-01-03T18:04:20Z"
+  },
+  "717": {
+    "merged": true
+  },
+  "780": {
+    "merged": true
+  },
+  "782": {
+    "merged": true
+  },
+  "805": {
+    "merged": true
+  },
+  "808": {
+    "merged": true
+  },
+  "809": {
+    "merged": true
+  },
+  "812": {
+    "merged": true
+  },
+  "962": {
+    "title": "Careful! Add utf8_unckecked feature",
+    "summary": "Adds an optional `utf8_unckecked` cargo feature that lifts `#![forbid(unsafe_code)]` and uses `std::str::from_utf8_unchecked` in `ByteStr::as_str` instead of `from_utf8(..).unwrap()`.",
+    "reason": "I think we should just use `Arc<str>` instead. Then there is no need for `unsafe` or `unwrap` at all. I've implemented that in https://github.com/tokio-rs/axum/pull/971 so will close this for now.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/962#issuecomment-1109466993",
+    "closedAt": "2022-04-26T07:52:23Z"
+  },
+  "1045": {
+    "title": "change `RoutId` from `AtomU32` to `AtomU64/AtomU32` according to `cfg`",
+    "summary": "Makes the router's `RouteId` counter use `AtomicU64` or `AtomicU32` depending on target atomic support (tokio-style cfg macros) and removes the `u32::MAX` overflow check when allocating route ids.",
+    "reason": "Thanks for the advice but I think we'll just leave it as is. I think the check is problematic either and its only executed during setup so unless you're adding routes while serving requests it probably wont matter.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/1045#issuecomment-1131294422",
+    "closedAt": "2022-05-19T06:46:13Z"
+  },
+  "1046": {
+    "title": "Remove `util::try_downcast` Duplicated code fragment",
+    "summary": "Removes axum's private copy of `try_downcast` and its test, making axum use the function from `axum-core`'s body module instead.",
+    "reason": "Its intentionally duplicated. We don't want `try_downcast` to be part of axum-core's public API.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/1046#discussion_r876872998",
+    "closedAt": "2022-05-19T12:50:06Z"
+  },
+  "1080": {
+    "title": "Add `axum_extra::response::FileResponse`",
+    "summary": "Adds an `axum_extra::response::FileResponse` type that responds with a file's contents, inferring `content-type` from the path.",
+    "reason": "I think the fact that this doesn't handle `If-Modified-Since` is a sign that this is the wrong abstraction.",
+    "by": "jplatte",
+    "url": "https://github.com/tokio-rs/axum/pull/1080#issuecomment-1152287657",
+    "closedAt": "2022-06-10T12:15:28Z"
+  },
+  "1293": {
+    "merged": true
+  },
+  "1296": {
+    "merged": true
+  },
+  "1362": {
+    "merged": true
+  },
+  "1477": {
+    "title": "Enforce Sync for inner services and handlers",
+    "summary": "Requires inner services and handlers to be `Sync` so that `Router` and `RouterService` become `Sync`, using a private `box_clone_sync_service` adapted from tower.",
+    "reason": "I've added this to the [todo list for 0.7](https://github.com/tokio-rs/axum/pull/1583) but probably easier to redo it there rather than trying to rebase it given all the changes.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/1477#issuecomment-1463561190",
+    "closedAt": "2023-03-10T10:01:47Z"
+  },
+  "1484": {
+    "merged": true
+  },
+  "1490": {
+    "merged": true
+  },
+  "1491": {
+    "merged": true
+  },
+  "1494": {
+    "merged": true
+  },
+  "1511": {
+    "merged": true
+  },
+  "1540": {
+    "merged": true
+  },
+  "1583": {
+    "merged": true
+  },
+  "1679": {
+    "title": "Enable Routing by Content-Type Header",
+    "summary": "Draft that reworks `Router`/`MethodRouter` internals around a pluggable `RouteResolver` so custom routers can be used, adding an example `FeckAllRouter` in axum-extra, to allow dispatching on the `Content-Type` header.",
+    "reason": "I'll close this for now. I'm not convinced this additional complexity is worth it.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/1679#issuecomment-1398139476",
+    "closedAt": "2023-01-20T09:40:17Z"
+  },
+  "1699": {
+    "title": "StreamBody responds with Bytes, not Result",
+    "summary": "Changes `StreamBody` to require a stream of `Bytes` instead of `Result<Bytes, E>`, since stream errors after headers are sent were silently ignored.",
+    "url": "https://github.com/tokio-rs/axum/pull/1699",
+    "closedAt": "2023-02-17T11:14:56Z"
+  },
+  "1727": {
+    "title": "Add support for nested fields in query strings and forms",
+    "summary": "Replaces `serde_urlencoded` with `serde_qs` in the `Query` and `Form` extractors so they can deserialize nested and indexed fields like `foo[0]=42`.",
+    "reason": "The QS format is non-standard. We already support one alternative urlencoded deserialization scheme that allows for arrays in `axum-extra` (`extract::{Form, Query}`), but in a less opinionated way (without indices in field names), implemented via `serde_html_form`.",
+    "by": "jplatte",
+    "url": "https://github.com/tokio-rs/axum/pull/1727#issuecomment-1408212188",
+    "closedAt": "2023-01-30T08:56:58Z"
+  },
+  "1772": {
+    "merged": true
+  },
+  "1774": {
+    "merged": true
+  },
+  "1775": {
+    "merged": true
+  },
+  "1776": {
+    "merged": true
+  },
+  "1778": {
+    "merged": true
+  },
+  "1835": {
+    "merged": true
+  },
+  "1918": {
+    "merged": true
+  },
+  "1993": {
+    "title": "Add `#[debug_middleware]`",
+    "summary": "Adds a `#[debug_middleware]` attribute macro to axum-macros that checks `middleware::from_fn` functions and produces clearer compile errors, sharing logic with `#[debug_handler]`.",
+    "url": "https://github.com/tokio-rs/axum/pull/1993",
+    "closedAt": "2024-05-02T21:27:55Z"
+  },
+  "2145": {
+    "merged": true
+  },
+  "2148": {
+    "title": "v0.6.x chore(sse): add space between field and value for compatibility",
+    "summary": "Backports #2149 to the v0.6.x branch, changing the SSE `Event` serialization to emit a space after the colon between field name and value.",
+    "url": "https://github.com/tokio-rs/axum/pull/2148",
+    "closedAt": "2023-09-16T19:37:48Z"
+  },
+  "2156": {
+    "title": "Add sqlx-postgresql-stream example",
+    "summary": "Adds an example crate showing how to stream rows from a sqlx Postgres query through `StreamBody` using a self-referential `SelfRefStream` wrapper that owns the pool.",
+    "reason": "I'm not sure this deserves its own examples. The examples are meant to show how to use certain features of axum or how to use axum with other crates. This really just feels like it shows a workaround for a sqlx quirk. Feels like it belongs more in their docs than ours.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/2156#issuecomment-1667328277",
+    "closedAt": "2023-08-07T08:33:37Z"
+  },
+  "2162": {
+    "merged": true
+  },
+  "2216": {
+    "merged": true
+  },
+  "2226": {
+    "merged": true
+  },
+  "2227": {
+    "merged": true
+  },
+  "2228": {
+    "title": "Release all the crates",
+    "summary": "Release PR on the v0.6.x branch bumping versions and changelogs of axum, axum-core, axum-extra and axum-macros (axum 0.6.21) to ship a batch of backports.",
+    "reason": "0.7 is coming out soon so lets just skip this. There were no high priority changes anyway.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/2228#issuecomment-1826737936",
+    "closedAt": "2023-11-26T09:49:59Z"
+  },
+  "2374": {
+    "title": "Add support for routing shorthand.",
+    "summary": "Adds shorthand methods such as `Router::get(path, handler)` directly on `Router`, as an alternative to `Router::route(path, get(handler))`.",
+    "reason": "I don't to add more methods directly to `Router` and make the API surface even bigger.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/2374#issuecomment-1831456712",
+    "closedAt": "2023-12-30T17:09:14Z"
+  },
+  "2393": {
+    "title": "Make `()` and `None` return a HTTP 204 response instead of 200",
+    "summary": "Changes the `IntoResponse` impl for `()` to produce `204 No Content` instead of `200 OK` (an `Option` impl was dropped during review) and updates the affected tests and examples.",
+    "reason": "About `()`, I'm wondering if it could be considered a breaking change. Seeing how many tests we needed to update I think it's likely users will have to update some of their tests as well. It also makes me think if changing it is even worth the churn.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/2393#issuecomment-1837117433",
+    "closedAt": "2023-12-28T23:41:08Z"
+  },
+  "2454": {
+    "title": "Update lib.rs doc : naming",
+    "summary": "Changes one word in the crate-level docs in `axum/src/lib.rs`, from \"services\" to \"handlers\", in the routing description.",
+    "reason": "Technically the handlers are turned into services internally. You can also route to services with `Router::route_service` so I don't think this is wrong.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/2454#issuecomment-1871612308",
+    "closedAt": "2023-12-28T22:58:24Z"
+  },
+  "2478": {
+    "title": "Remove duplication in serving with and without graceful shutdown",
+    "summary": "Refactors `axum::serve` so the non-graceful path reuses the graceful-shutdown implementation with a shutdown signal that never completes, removing duplicated serving code.",
+    "url": "https://github.com/tokio-rs/axum/pull/2478",
+    "closedAt": "2024-09-11T19:28:14Z"
+  },
+  "2479": {
+    "title": "Make `serve` generic over the listener and IO types",
+    "summary": "Makes `axum::serve` generic over the listener and its IO type (instead of requiring a `tokio::net::TcpListener`), so it can serve over e.g. Unix sockets; marked as a breaking change for 0.8.",
+    "url": "https://github.com/tokio-rs/axum/pull/2479",
+    "closedAt": "2024-09-27T21:58:54Z"
+  },
+  "2865": {
+    "title": "Avoid some extra clones/allocations",
+    "summary": "Reduces cloning in request routing: splits the request into parts to borrow the URI path instead of `to_owned()`, adds owned variants (`oneshot_inner_owned`, `call_owned`) on `Route`, and avoids re-cloning handlers and `Method` in `MethodRouter::call_with_state`.",
+    "reason": "Given latest comments, I want to emphasize once again that this would be much easier to get merged as several smaller PRs, however small the diff may already be.",
+    "by": "jplatte",
+    "url": "https://github.com/tokio-rs/axum/pull/2865#issuecomment-2402251326",
+    "closedAt": "2024-10-09T17:56:49Z"
+  },
+  "2968": {
+    "title": "backport PR 2865 to main",
+    "summary": "Draft that rebases the clone/allocation reductions from #2865 (owned `Route` call paths, borrowing the URI path, fewer handler clones) onto current `main`.",
+    "url": "https://github.com/tokio-rs/axum/pull/2968",
+    "closedAt": "2024-10-10T15:11:11Z"
+  },
+  "2969": {
+    "merged": true
+  },
+  "2970": {
+    "merged": true
+  },
+  "2971": {
+    "merged": true
+  },
+  "2973": {
+    "merged": true
+  },
+  "3021": {
+    "title": "fix cargo test no default features in v0.6.x",
+    "summary": "Applies Debian's test-fencing patch to the v0.6.x branch, adding `#[cfg(feature = ...)]` gates across axum's tests so `cargo test --no-default-features` compiles.",
+    "url": "https://github.com/tokio-rs/axum/pull/3021",
+    "closedAt": "2024-11-13T22:43:59Z"
+  },
+  "3031": {
+    "merged": true
+  },
+  "3041": {
+    "title": "1",
+    "summary": "Removes the `examples` workspace members from the root `Cargo.toml` and stops axum from setting a default `Allow` header on method-not-allowed responses.",
+    "url": "https://github.com/tokio-rs/axum/pull/3041",
+    "closedAt": "2024-11-20T09:07:37Z"
+  },
+  "3127": {
+    "title": "feature: add `get_route_paths` to `path_router`",
+    "summary": "Adds a `get_route_paths` method on the internal `PathRouter` (exposed via `Router`) returning a `Vec` of the registered route paths, taken from the keys of `path_to_route_id`.",
+    "reason": "I'm sorry but there's been multiple issues asking for this and it has been rejected as a feature.",
+    "by": "jplatte",
+    "url": "https://github.com/tokio-rs/axum/pull/3127#issuecomment-2564391387",
+    "closedAt": "2024-12-28T17:58:37Z"
+  },
+  "3158": {
+    "merged": true
+  },
+  "3280": {
+    "title": "Expose Router::call_with_state",
+    "summary": "Renames the existing non-generic `Router::call_with_state` internally and adds a public generic `call_with_state` wrapper so callers can invoke a `Router` with an explicit state.",
+    "url": "https://github.com/tokio-rs/axum/pull/3280",
+    "closedAt": "2025-03-21T19:31:07Z"
+  },
+  "3294": {
+    "merged": true
+  },
+  "3394": {
+    "title": "Activate more lints",
+    "summary": "Draft that enables a set of clippy `pedantic`/`nursery` lints in the workspace `Cargo.toml` (e.g. `must_use_candidate`, `use_self`, `manual_let_else`, `missing_const_for_fn`) and fixes the resulting warnings across the crates.",
+    "reason": "I think this gonna be hard to land given all the merge conflicts. If you're still motivated to work on this I'd rather that you submit smaller more focused PRs.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/3394#issuecomment-4458559462",
+    "closedAt": "2026-05-15T09:18:21Z"
+  },
+  "3399": {
+    "merged": true
+  },
+  "3408": {
+    "title": "Declutter statements",
+    "summary": "Enables six more stylistic clippy lints (`redundant_else`, `if_not_else`, `explicit_iter_loop`, `unused_peekable`, `unnecessary_semicolon`, `manual_assert`) and rewrites the flagged code.",
+    "reason": "I think I'll close this for now. None the changes really seem very high value to me, mostly just moving code around without much benefit.",
+    "by": "davidpdrsn",
+    "url": "https://github.com/tokio-rs/axum/pull/3408#issuecomment-4458576126",
+    "closedAt": "2026-05-15T09:20:37Z"
+  },
+  "3479": {
+    "title": "chore: move docs from markdown files to rust source",
+    "summary": "Moves API documentation from `docs/*.md` files pulled in via `include_str!` into inline doc comments in the Rust source, so rust-analyzer shows it in hover tooltips.",
+    "url": "https://github.com/tokio-rs/axum/pull/3479",
+    "closedAt": "2026-04-10T18:26:17Z"
+  }
+}

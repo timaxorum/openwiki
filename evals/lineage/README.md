@@ -49,11 +49,12 @@ Prerequisites: `git`, `cargo`, Node 22 with `pnpm`, Python 3.10+, and the
 git clone -b lineage-eval https://github.com/timaxorum/openwiki ~/openwiki-lineage
 cd ~/openwiki-lineage && pnpm install
 
-# 2. A full mirror of each repository under test, with PR heads
+# 2. A full mirror of each repository under test (the agents work in
+#    clones of these; the case base commits must be present)
 git clone https://github.com/tokio-rs/axum ~/eval-mirrors/axum
-git -C ~/eval-mirrors/axum fetch origin '+refs/pull/*/head:refs/remotes/pr/*'
+git clone https://github.com/tokio-rs/tokio ~/eval-mirrors/tokio
 
-# 3. Configuration
+# 3. Configuration. The indexes ship in cases/ as .json.gz; nothing to build.
 cp evals/lineage/harness/config.example.json evals/lineage/harness/config.json
 #    edit the model, mirror paths and budget if needed
 
@@ -79,6 +80,47 @@ read-only `git`. Each run has a turn and dollar cap set in the config.
 Send back `results/report.json` and the `results/runs` folder (transcripts
 included), so the judge's labels can be audited.
 
+**Size and cost.** 20 cases (18 primary, 2 controls) × 2 arms × 2
+repetitions = 80 agent runs, plus 80 one-turn judge calls. Each agent run is
+capped by `max_budget_usd` (5 by default), so the worst case is $400 of
+agent time; most runs should stop well short of the cap. To try it small
+first, set `"repetitions": 1` and `"roles": ["primary"]` (36 runs), or pass
+`--case <id>` to run one case.
+
+## Cases
+
+`cases/cases.json` holds 21 cases mined from tokio-rs/axum (13) and
+tokio-rs/tokio (8). ripgrep was searched but yielded none, because its
+author lands rejected ideas as edited direct commits rather than as separate
+PRs.
+
+| Role       | Count | Meaning                                                                                                                                  |
+| ---------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `primary`  | 18    | The rejected attempt and the maintainers' objection are visible at the accepted PR's base commit.                                        |
+| `control`  | 2     | The objection came after the accepted work began (axum-2301, axum-3308), so history cannot help. Lineage should make no difference here. |
+| `excluded` | 1     | axum-1655: the rejected PR's branch was force-reset upstream, so its diff cannot be recovered.                                           |
+
+Most rejections are about API surface or placement ("extend the existing
+type, don't add a new one", "this belongs in axum-extra or tokio-util", "this
+breaks semver"), not runtime behaviour. Two cases point in opposite
+directions on placement (tokio-4538 moved out of core, tokio-4238 moved into
+it), so a fixed "keep it out of core" habit cannot score well on both.
+
+Eight problem statements were edited because they restated the
+maintainers' objection or pointed at the accepted mechanism. The original
+text is kept in `problem_original`, with the reason in `problem_edit`.
+
+**Distractors.** The case's own rejected PR must not be the only attempt with
+a recorded reason, or it would stand out by format alone. The 147 other
+closed PRs that touch the case files were summarised from their own
+discussions (`cases/*-distractor-annotations.json`); 41 have a maintainer's
+stated reason. Of the 147, 66 turned out to have been merged with a merge
+commit, so they are treated as merged changes, not attempts.
+
+**No-model check** (`recall.ts`): for all 18 primary cases, the brief for
+the files the accepted or rejected PR touched shows the rejected attempt with
+its reason.
+
 ## Known limits
 
 - **Rationale quality is uneven.** Case PRs carry mined reasons; other PRs
@@ -91,3 +133,11 @@ included), so the judge's labels can be audited.
   headline rate.
 - **History can mislead.** The brief says reasons may no longer apply. Cases
   where following old history would be wrong are not covered yet.
+- **Reasons sometimes name the fix.** In several cases the maintainer's
+  objection also suggested the accepted approach (for example axum-3464:
+  "what you're really looking for is `method_not_allowed_fallback`"). That is
+  realistic, since this is exactly what a history store would hold, but it
+  means the lineage arm can be steered towards A as well as away from R.
+- **Files outside the case.** The hook adds history for any file the agent
+  opens, but distractor reasons were only gathered for files the case PRs
+  touched. Elsewhere the brief shows merged changes and counts of attempts.
