@@ -70,7 +70,7 @@ export function resolveAsOf(repo: string, sha: string): AsOf {
   const full = git("rev-parse", sha);
   return {
     sha: full,
-    date: git("log", "-1", "--format=%cI", full),
+    date: new Date(git("log", "-1", "--format=%cI", full)).toISOString(),
     ancestors: new Set(git("rev-list", full).split("\n")),
   };
 }
@@ -161,11 +161,10 @@ function isVisible(
   if (event.kind === "merged-change") {
     return asOf.ancestors.has(event.sha);
   }
-  const closedAt =
-    event.pr === undefined
-      ? undefined
-      : annotations[String(event.pr)]?.closedAt;
-  return (closedAt ?? event.date) < asOf.date;
+  const annotation =
+    event.pr === undefined ? undefined : annotations[String(event.pr)];
+  const from = annotation?.visibleFrom ?? annotation?.closedAt ?? event.date;
+  return Date.parse(from) <= Date.parse(asOf.date);
 }
 
 function annotationFor(

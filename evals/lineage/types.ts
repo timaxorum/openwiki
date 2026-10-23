@@ -58,6 +58,11 @@ export interface Annotation {
   by?: string;
   /** Where the reason was given. */
   url?: string;
+  /**
+   * When the rationale became known, ISO 8601. An attempt is visible from
+   * this time; without it, from its close date, then its head commit date.
+   */
+  visibleFrom?: string;
   /** When the PR was closed or merged, ISO 8601. */
   closedAt?: string;
 }

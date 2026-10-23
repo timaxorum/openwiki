@@ -48,7 +48,12 @@ async function main(): Promise<void> {
     .filter(Boolean)
     .map((line) => {
       const [sha, parents, date, subject] = line.split("\x1f");
-      return { sha, parent: parents.split(" ")[0] ?? "", date, subject };
+      return {
+        sha,
+        parent: parents.split(" ")[0] ?? "",
+        date: new Date(date).toISOString(),
+        subject,
+      };
     });
 
   for (const commit of commits) {
@@ -103,7 +108,7 @@ async function main(): Promise<void> {
       kind: "unmerged-attempt",
       sha,
       base,
-      date,
+      date: new Date(date).toISOString(),
       title: subject,
       pr,
       link: "recorded",

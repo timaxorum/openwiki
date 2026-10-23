@@ -1,0 +1,1433 @@
+{
+  "cases": [
+    {
+      "id": "axum-509",
+      "repo": "tokio-rs/axum",
+      "problem": "Handlers that need to return several different JSON-serializable types from different branches currently have to either box/convert manually or unify on one concrete type, because `Json<T>` is generic over `T`. Provide a way to produce a JSON response whose payload type is erased (not part of the response type), so that heterogeneous serializable values can be returned from the same handler as a single concrete response type, with serialization errors surfaced sensibly.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 509,
+        "title": "Add Json::erased constructor",
+        "closed_at": "2021-11-17T19:34:55Z",
+        "approach": "Adds an inherent constructor `Json::<Box<serde_json::value::RawValue>>::erased<T: Serialize>(val) -> Result<Self, JsonSerializationError>` in axum/src/json.rs (core axum crate), plus a new public `JsonSerializationError` type re-exported from `axum::response`. Makes serde_json part of axum's public API.",
+        "reason": [
+          {
+            "quote": "Maybe we should release this as a tiny standalone crate 🤷 Then we can more easily ~~break~~ change things.",
+            "url": "https://github.com/tokio-rs/axum/pull/509#issuecomment-971403834",
+            "by": "davidpdrsn"
+          },
+          {
+            "quote": "Perhaps some sort of \"axum-util\" kinda crate could be good to have. Just as sort of a grab bag of things that seem nice but where we're not super confident about the API.",
+            "url": "https://github.com/tokio-rs/axum/pull/509#issuecomment-971884038",
+            "by": "davidpdrsn"
+          }
+        ],
+        "reviewer": "davidpdrsn",
+        "url": "https://github.com/tokio-rs/axum/pull/509",
+        "files": [
+          "axum/Cargo.toml",
+          "axum/src/json.rs",
+          "axum/src/response/mod.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 537,
+        "title": "Add axum_extra::response::ErasedJson",
+        "merged_at": "2021-11-17T21:54:03Z",
+        "approach": "Adds a distinct type `ErasedJson(serde_json::Result<Vec<u8>>)` with `ErasedJson::new<T: Serialize>(val)` in the new axum-extra crate (axum-extra/src/response/erased_json.rs, `axum_extra::response` module). Serialization happens eagerly; the error is stored and turned into a 500 in `IntoResponse`. Core `Json` is untouched.",
+        "url": "https://github.com/tokio-rs/axum/pull/537",
+        "files": [
+          "axum-extra/Cargo.toml",
+          "axum-extra/src/lib.rs",
+          "axum-extra/src/response/erased_json.rs",
+          "axum-extra/src/response/mod.rs",
+          "axum/Cargo.toml"
+        ],
+        "base_sha": "a16ea65031cca3c19e1b08706dd77528f7c59eff"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": true,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: adds `pub fn erased` in an `impl Json<Box<RawValue>>` block in axum/src/json.rs",
+        "rejected: new pub type `JsonSerializationError` re-exported from axum::response",
+        "accepted: new file axum-extra/src/response/erased_json.rs with `pub struct ErasedJson`",
+        "accepted: no changes under axum/src/ (only axum-extra/ and Cargo.toml)"
+      ],
+      "tempting": 2,
+      "notes": "Same author (jplatte, a maintainer) closed it himself after agreeing to move it out of core. axum-extra did not exist yet when #509 was written but does exist at the accepted PR's base, so an agent at that base can see it. The rejection is about placement/API stability, not behaviour.",
+      "role": "primary"
+    },
+    {
+      "id": "axum-1083",
+      "repo": "tokio-rs/axum",
+      "problem": "Users writing middleware frequently ask how to run extractors (e.g. `Extension<T>`, `TypedHeader`, custom auth extractors) inside middleware. Today the only way is to manually construct `RequestParts` and invoke the extractor, which is undiscoverable and verbose. Make it straightforward to use extractors from middleware.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 1083,
+        "title": "Add methods to easily run extractors from middleware",
+        "closed_at": "2022-06-11T19:31:40Z",
+        "approach": "Adds a new public sealed extension trait `RequestExt` (axum/src/request_ext.rs, re-exported from axum root) implemented for `http::Request<B>` with async `extract::<T>()` and `extract_body::<T>()` methods, and adds `RequestParts::into_parts` in axum-core so the request can be rebuilt afterwards. Updates middleware/extract docs.",
+        "reason": [
+          {
+            "quote": "I'm wondering if something like ... Could work. So extending `middleware::from_fn` so it can run extractors automatically. Then we wouldn't need any new API.",
+            "url": "https://github.com/tokio-rs/axum/pull/1083#issuecomment-1152892797",
+            "by": "davidpdrsn"
+          }
+        ],
+        "reviewer": "davidpdrsn (self-review; author)",
+        "url": "https://github.com/tokio-rs/axum/pull/1083",
+        "files": [
+          "axum-core/src/extract/mod.rs",
+          "axum/src/docs/extract.md",
+          "axum/src/docs/middleware.md",
+          "axum/src/lib.rs",
+          "axum/src/request_ext.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 1088,
+        "title": "Support running extractors from `middleware::from_fn`",
+        "merged_at": "2022-06-15T08:15:34Z",
+        "approach": "Makes `middleware::from_fn` generic over the argument tuple: `from_fn<F, T>` / `FromFnLayer<F, T>` / `FromFn<F, S, T>` with a `macro_rules! impl_service` that implements `Service` for closures taking any number of `FromRequest` extractors followed by `Request<B>` and `Next<B>`. No new public trait; breaking change to type params.",
+        "url": "https://github.com/tokio-rs/axum/pull/1088",
+        "files": [
+          "axum/CHANGELOG.md",
+          "axum/src/extract/extractor_middleware.rs",
+          "axum/src/extract/mod.rs",
+          "axum/src/middleware/from_fn.rs",
+          "axum/src/routing/mod.rs"
+        ],
+        "base_sha": "dbdbd0165ed5048faea38cf9de1746ad4d8a4bd2"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: new file axum/src/request_ext.rs defining `pub trait RequestExt`",
+        "rejected: adds `RequestParts::into_parts` in axum-core/src/extract/mod.rs",
+        "accepted: changes only axum/src/middleware/from_fn.rs signatures (`FromFnLayer<F, T>`, extra type param T) plus macro-generated Service impls",
+        "accepted: no new public trait/type"
+      ],
+      "tempting": 2,
+      "notes": "Both PRs by the primary maintainer (davidpdrsn); the rejection is a self-reconsideration recorded in a comment. A similar `RequestExt` trait was added to axum much later (0.7), so the rejection is time-dependent.",
+      "role": "primary",
+      "problem_original": "Users writing middleware frequently ask how to run extractors (e.g. `Extension<T>`, `TypedHeader`, custom auth extractors) inside middleware. Today the only way is to manually construct `RequestParts` and invoke the extractor, which is undiscoverable and verbose. Make it straightforward to use extractors from middleware written with axum's middleware helpers.",
+      "problem_edit": "Points at the accepted change to middleware::from_fn."
+    },
+    {
+      "id": "axum-1920",
+      "repo": "tokio-rs/axum",
+      "problem": "There is no convenient response type for serving WebAssembly modules: users have to set `Content-Type: application/wasm` manually on every response. Add a response helper that sets the correct content type for wasm payloads (other common static asset types may also benefit).",
+      "issue_number": null,
+      "rejected": {
+        "pr": 1920,
+        "title": "Add WASM response type",
+        "closed_at": "2023-04-09T11:04:21Z",
+        "approach": "Adds `pub struct Wasm<T>(pub T)` in axum-extra/src/response/wasm.rs with `impl<T> IntoResponse for Wasm<T> where T: Into<Full<Bytes>>` (bound copied from axum's `Html`), i.e. the body must be fully in memory. The first revision put the type in core axum before review moved it to axum-extra.",
+        "reason": [
+          {
+            "quote": "Not sure this is worth having in the main axum crate. We can put it in axum-extra instead.",
+            "url": "https://github.com/tokio-rs/axum/pull/1920#pullrequestreview-1376863321",
+            "by": "davidpdrsn"
+          },
+          {
+            "quote": "I've actually been thinking that we could make these types work for any `T: IntoResponse`. Then it wouldn't be required to have the contents in memory.",
+            "url": "https://github.com/tokio-rs/axum/pull/1920#discussion_r1161254026",
+            "by": "davidpdrsn"
+          }
+        ],
+        "reviewer": "davidpdrsn",
+        "url": "https://github.com/tokio-rs/axum/pull/1920",
+        "files": [
+          "axum-extra/src/response/mod.rs",
+          "axum-extra/src/response/wasm.rs",
+          "axum/CHANGELOG.md"
+        ]
+      },
+      "accepted": {
+        "pr": 1921,
+        "title": "Add `Html`, `Css`, `JavaScript`, and `Wasm` response types",
+        "merged_at": "2023-04-17T11:20:18Z",
+        "approach": "Adds a `mime_response!` macro in axum-extra/src/response/mod.rs generating `Html<T>`, `Css<T>`, `JavaScript<T>`, `Wasm<T>` newtypes whose `IntoResponse` impl is bounded on `T: IntoResponse` (so streaming bodies work), each setting its content type.",
+        "url": "https://github.com/tokio-rs/axum/pull/1921",
+        "files": ["axum-extra/CHANGELOG.md", "axum-extra/src/response/mod.rs"],
+        "base_sha": "24f8dc53f49d8946418f103314ab6a31ff68be5c"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: bound `T: Into<Full<Bytes>>` on the IntoResponse impl",
+        "rejected: separate file axum-extra/src/response/wasm.rs with a single type",
+        "accepted: bound `T: IntoResponse`; macro `mime_response!` generating several types in axum-extra/src/response/mod.rs",
+        "both: no change to core axum"
+      ],
+      "tempting": 3,
+      "notes": "WEAK case: the rejected PR was superseded by the maintainer within hours; the main difference is the trait bound (and scope: one type vs four). The axum-core vs axum-extra placement was already fixed inside the rejected PR after review.",
+      "role": "primary"
+    },
+    {
+      "id": "axum-2301",
+      "repo": "tokio-rs/axum",
+      "problem": "Issue #2294 reports that when a handler takes `Extension<T>` where `T` does not implement `Clone`, the compiler error is confusing, even with `#[debug_handler]`. Improve the situation so users get an understandable diagnostic for this mistake, and make sure it does not regress.",
+      "issue_number": 2294,
+      "rejected": {
+        "pr": 2301,
+        "title": "Add special handling of Extension and Clone for debug_handler",
+        "closed_at": "2024-05-06T22:37:28Z",
+        "approach": "Adds `check_extension_clone(item_fn)` and `is_extension_type(ty)` to axum-macros/src/debug_handler.rs that detect parameters whose type path ends in `Extension` and emit generated `fn` items asserting `T: Clone`, plus a trybuild fail test not_clone.rs/.stderr.",
+        "reason": [
+          {
+            "quote": "I couldn't see why we would need to special case `Extension` in particular when we already make sure to have good error messages for other extractors such as `Json` so I decided to see what the error message is on `main` with `#[debug_handler]`. Turns out that we don't actually need to do anything, see #2731.",
+            "url": "https://github.com/tokio-rs/axum/pull/2301#issuecomment-2097044195",
+            "by": "jplatte"
+          }
+        ],
+        "reviewer": "jplatte",
+        "url": "https://github.com/tokio-rs/axum/pull/2301",
+        "files": [
+          "axum-macros/src/debug_handler.rs",
+          "axum-macros/tests/debug_handler/fail/not_clone.rs",
+          "axum-macros/tests/debug_handler/fail/not_clone.stderr"
+        ]
+      },
+      "accepted": {
+        "pr": 2731,
+        "title": "Add Extension debug_handler ui test",
+        "merged_at": "2024-06-09T18:17:43Z",
+        "approach": "No macro code change. Adds only a trybuild UI test axum-macros/tests/debug_handler/fail/extension_not_clone.rs with its .stderr snapshot showing the existing `#[debug_handler]` output is already clear.",
+        "url": "https://github.com/tokio-rs/axum/pull/2731",
+        "files": [
+          "axum-macros/tests/debug_handler/fail/extension_not_clone.rs",
+          "axum-macros/tests/debug_handler/fail/extension_not_clone.stderr"
+        ],
+        "base_sha": "87b86a7066c320cb388ad4d27f32e7092b56b52f"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": false
+      },
+      "distinguishing_signals": [
+        "rejected: modifies axum-macros/src/debug_handler.rs (new fns check_extension_clone / is_extension_type matching the identifier \"Extension\")",
+        "accepted: zero changes to axum-macros/src; only adds tests/debug_handler/fail/extension_not_clone.{rs,stderr}"
+      ],
+      "tempting": 3,
+      "notes": "The accepted 'fix' is a regression test, i.e. the right answer is 'no special-casing needed'. Useful for testing whether agents add ad-hoc special cases; awkward for tests that grade code changes. Accepted PR was opened ~1 minute before the rejection comment.",
+      "role": "control"
+    },
+    {
+      "id": "axum-377",
+      "repo": "tokio-rs/axum",
+      "problem": "Issue #375: the `Json` extractor rejects requests whose Content-Type is a JSON-based media type other than exactly `application/json`, e.g. `application/cloudevents+json` or other `+json` structured-syntax suffixes. The extractor should accept these while still rejecting non-JSON types (e.g. `text/json` is not required) and still handling parameters such as `; charset=utf-8`.",
+      "issue_number": 375,
+      "rejected": {
+        "pr": 377,
+        "title": "Expand accepted content types for Json requests",
+        "closed_at": "2021-10-08T14:23:35Z",
+        "approach": "Generalises the shared helper `has_content_type` in src/extract/mod.rs to take a new `pub(crate) enum ExpectedContentType { StartsWith(&str), EndsWith(&str) }` and makes `Json` accept `StartsWith(\"application/json\") || EndsWith(\"+json\")` via raw string matching; updates Form to the new signature.",
+        "reason": [
+          {
+            "quote": "I think adding `mime` as a default dependency is fine since it has no other dependencies. I'm working on a version that uses that.",
+            "url": "https://github.com/tokio-rs/axum/pull/377#issuecomment-938677579",
+            "by": "davidpdrsn"
+          }
+        ],
+        "reviewer": "davidpdrsn",
+        "url": "https://github.com/tokio-rs/axum/pull/377",
+        "files": ["src/extract/form.rs", "src/extract/mod.rs", "src/json.rs"]
+      },
+      "accepted": {
+        "pr": 378,
+        "title": "Expand accepted content types for JSON requests",
+        "merged_at": "2021-10-08T14:51:22Z",
+        "approach": "Adds a private `json_content_type(req)` in src/json.rs that parses the header as `mime::Mime` and accepts `type_() == application && (subtype() == json || suffix() == json)`. Adds `mime` to the `json` feature in Cargo.toml; the generic `has_content_type` helper is left alone. Adds a `json_content_types` test.",
+        "url": "https://github.com/tokio-rs/axum/pull/378",
+        "files": [
+          "CHANGELOG.md",
+          "Cargo.toml",
+          "src/json.rs",
+          "src/tests/mod.rs"
+        ],
+        "base_sha": "fe4c0ae386a759e6b20d589f2c8d8e253ad58e7c"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: new enum `ExpectedContentType` with `StartsWith`/`EndsWith` variants; `ends_with(\"+json\")` string matching",
+        "rejected: changes signature of `has_content_type` and touches src/extract/form.rs",
+        "accepted: `content_type.parse::<mime::Mime>()` with `mime.suffix()` check in src/json.rs",
+        "accepted: Cargo.toml `json = [\"serde_json\", \"mime\"]`"
+      ],
+      "tempting": 2,
+      "notes": "Maintainer superseded the contributor's PR within 10 minutes. Very old layout (single crate, src/ at repo root).",
+      "role": "primary"
+    },
+    {
+      "id": "axum-2476",
+      "repo": "tokio-rs/axum",
+      "problem": "Issue #2449: request throughput regressed significantly in axum 0.7 for routers with many routes, partly because the `Router` (and its route table) is cloned per connection/request. Make cloning a `Router` cheap.",
+      "issue_number": 2449,
+      "rejected": {
+        "pr": 2476,
+        "title": "Internally `Arc` `Router`",
+        "closed_at": "2024-01-13T13:43:58Z",
+        "approach": "Stores router state as `inner: Arc<RouterInner<S>>` and uses `Arc::try_unwrap`/clone-on-write in builder methods. It is stacked on #2473, which adds `Sync` bounds to handlers, layers and internal erased types (`ErasedIntoRoute<S, E>: Send + Sync`, `H: Clone + Send + Sync`, `LayerFn: ... + Send + Sync`) so that the router can be shared — a breaking API change.",
+        "reason": [
+          {
+            "quote": "https://github.com/tokio-rs/axum/pull/2476 is currently based on https://github.com/tokio-rs/axum/pull/2473, which is a breaking change. Thus, we can't ship it in a patch release for 0.7 to recover performance of existing apps that have upgraded to axum 0.7.",
+            "url": "https://github.com/tokio-rs/axum/pull/2481",
+            "by": "jplatte (PR description of #2481)"
+          },
+          {
+            "quote": "Not sure if we still require `Sync` for services or if the mutex approach is fine.",
+            "url": "https://github.com/tokio-rs/axum/pull/2476#issuecomment-1890462791",
+            "by": "davidpdrsn"
+          }
+        ],
+        "reviewer": "jplatte",
+        "url": "https://github.com/tokio-rs/axum/pull/2476",
+        "files": [
+          "axum-extra/src/handler/mod.rs",
+          "axum-extra/src/handler/or.rs",
+          "axum-extra/src/routing/mod.rs",
+          "axum/CHANGELOG.md",
+          "axum/src/box_clone_service.rs",
+          "axum/src/boxed.rs",
+          "axum/src/handler/mod.rs",
+          "axum/src/lib.rs",
+          "axum/src/middleware/from_fn.rs",
+          "axum/src/routing/method_routing.rs",
+          "axum/src/routing/mod.rs",
+          "axum/src/routing/path_router.rs",
+          "axum/src/routing/route.rs",
+          "axum/src/routing/tests/mod.rs",
+          "clippy.toml"
+        ]
+      },
+      "accepted": {
+        "pr": 2483,
+        "title": "Internally `Arc` `Router`, without breaking changes",
+        "merged_at": "2024-01-13T12:44:33Z",
+        "approach": "Applies the same `Arc<RouterInner<S>>` change on top of #2481, which wraps the non-`Sync` boxed pieces in a mutex (`BoxedIntoRoute<S, E>(AxumMutex<Box<dyn ErasedIntoRoute<S, E>>>)`, `AxumMutex` in axum/src/util.rs that counts locks in tests) so `Router` becomes `Sync` without new trait bounds; adds a test asserting the lock is not taken per request.",
+        "url": "https://github.com/tokio-rs/axum/pull/2483",
+        "files": [
+          "axum/CHANGELOG.md",
+          "axum/clippy.toml",
+          "axum/src/boxed.rs",
+          "axum/src/routing/method_routing.rs",
+          "axum/src/routing/mod.rs",
+          "axum/src/routing/path_router.rs",
+          "axum/src/routing/route.rs",
+          "axum/src/routing/tests/mod.rs",
+          "axum/src/test_helpers/tracing_helpers.rs",
+          "axum/src/util.rs"
+        ],
+        "base_sha": "d3112a40d55f123bc5e65f995e2068e245f12055"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: adds `+ Sync` to public/internal bounds (handlers, layers, `ErasedIntoRoute`) — breaking",
+        "accepted: no new `Sync` bounds; introduces `AxumMutex` / `Mutex` wrapper around boxed erased routes",
+        "both: `inner: Arc<RouterInner<S>>` in axum/src/routing/mod.rs"
+      ],
+      "tempting": 2,
+      "notes": "Both authored by maintainers. The rejection is purely about semver (breaking vs patch); the Sync-bound variant was intended for 0.8 later. The rejection reason lives in another PR's (#2481) description. Rejected files include #2473's changes because #2476 was stacked on it.",
+      "role": "primary",
+      "problem_original": "Issue #2449: request throughput regressed significantly in axum 0.7 for routers with many routes, partly because the `Router` (and its route table) is cloned per connection/request. Make cloning a `Router` cheap, and ship it in a way that can go out in a 0.7.x patch release.",
+      "problem_edit": "The clause is the rejection reason (semver)."
+    },
+    {
+      "id": "axum-3308",
+      "repo": "tokio-rs/axum",
+      "problem": "When a user registers overlapping method routes for the same path (e.g. two `get` handlers on one path, including via `merge`), axum panics as intended, but the reported panic location points into axum's internal routing code instead of the user's call site, which makes the mistake hard to find. Make the panic report the user's location.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 3308,
+        "title": "add missing track_caller to PathRouter method",
+        "closed_at": "2025-04-24T06:08:03Z",
+        "approach": "Adds `#[track_caller]` attributes to internal `PathRouter` methods in axum/src/routing/path_router.rs so the existing panic inside the internal merge path propagates the caller location.",
+        "reason": [
+          {
+            "quote": "I took a look, and I think the better fix is to avoid panicking in internal functions. I implemented that and added a test in #3319.",
+            "url": "https://github.com/tokio-rs/axum/pull/3308#issuecomment-2826485944",
+            "by": "jplatte"
+          }
+        ],
+        "reviewer": "jplatte",
+        "url": "https://github.com/tokio-rs/axum/pull/3308",
+        "files": ["axum/src/routing/path_router.rs"]
+      },
+      "accepted": {
+        "pr": 3319,
+        "title": "Fix panic location for overlapping method routes",
+        "merged_at": "2025-04-24T09:24:54Z",
+        "approach": "Changes the internal `MethodRouter::merge_for_path` (axum/src/routing/method_routing.rs) and its callers in path_router.rs/mod.rs to return `Result` and propagate errors, so the actual `panic!` happens in the public `#[track_caller]` entry points. Adds integration test axum/tests/panic_location.rs checking the reported location.",
+        "url": "https://github.com/tokio-rs/axum/pull/3319",
+        "files": [
+          "axum/src/routing/method_routing.rs",
+          "axum/src/routing/mod.rs",
+          "axum/src/routing/path_router.rs",
+          "axum/tests/panic_location.rs"
+        ],
+        "base_sha": "9c9cbb5c5f72452825388d63db4f1e36c0d9b3aa"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": false
+      },
+      "distinguishing_signals": [
+        "rejected: only adds `#[track_caller]` lines to internal fns in path_router.rs",
+        "accepted: `merge_for_path` returns `Result<_, _>`; panic moved to public API boundary (`Err(e) => panic!(\"{e}\")`)",
+        "accepted: new test file axum/tests/panic_location.rs"
+      ],
+      "tempting": 3,
+      "notes": "Maintainer wrote the accepted PR minutes before closing the rejected one.",
+      "role": "control"
+    },
+    {
+      "id": "axum-496",
+      "repo": "tokio-rs/axum",
+      "problem": "After the routing changes in axum 0.3, calling `Router::nest(\"/\", some_service)` no longer behaves as before: it conflicts with other routes and users get a confusing panic message from the route matcher. Users upgrading are hitting this and do not understand what to do. Address this so that users are guided to a working setup.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 496,
+        "title": "Make `.nest(\"/\", service)` work again (with a warning)",
+        "closed_at": "2021-11-11T16:48:00Z",
+        "approach": "In `Router::nest` (axum/src/routing/mod.rs) special-cases `path == \"/\"`: logs `tracing::warn!(\"Using .nest(\\\"/\\\", service) is discouraged, use .fallback(service) instead.\")` and silently delegates to `self.fallback(svc)`; adds a tracing dependency use in axum/Cargo.toml.",
+        "reason": [
+          {
+            "quote": "Hm I'm wondering if this is actually doing the users a disservice by making it seem like `nest(\"/\", _)` works. What do you think about instead storing in a `bool` in `Router` for whether `.nest(\"/\", _)` has been called, and if so when adding another causes a panic, check if that has been called and then change the panic message to mention using `fallback` instead?",
+            "url": "https://github.com/tokio-rs/axum/pull/496#issuecomment-966450135",
+            "by": "davidpdrsn"
+          },
+          {
+            "quote": "I'm a bit worried that removing this in the future would break things again for some users. So I think adding a hint in the panic message is safer.",
+            "url": "https://github.com/tokio-rs/axum/pull/496#issuecomment-966456279",
+            "by": "davidpdrsn"
+          }
+        ],
+        "reviewer": "davidpdrsn",
+        "url": "https://github.com/tokio-rs/axum/pull/496",
+        "files": ["axum/Cargo.toml", "axum/src/routing/mod.rs"]
+      },
+      "accepted": {
+        "pr": 500,
+        "title": "Improve error message for `nest(\"/\", _)`",
+        "merged_at": "2021-11-11T18:22:26Z",
+        "approach": "Adds `Router::panic_on_matchit_error(&self, err: matchit::InsertError)` which, when the router has nested at root, panics with a message telling the user to use `Router::fallback` instead; keeps `nest(\"/\", _)` non-working. Adds tests `good_error_message_if_using_nest_root` and `..._when_merging` in axum/src/routing/tests/mod.rs.",
+        "url": "https://github.com/tokio-rs/axum/pull/500",
+        "files": ["axum/src/routing/mod.rs", "axum/src/routing/tests/mod.rs"],
+        "base_sha": "fb8156f17cc1d6a67e8d908a90db7c3946eb76b8"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": true,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: `if path == \"/\" { warn!(...); return self.fallback(svc); }` inside `nest`",
+        "rejected: uses `tracing::warn!`",
+        "accepted: no behavioural rerouting; new `panic_on_matchit_error` producing a hint mentioning `fallback`",
+        "accepted: new tests whose names contain `good_error_message_if_using_nest_root`"
+      ],
+      "tempting": 2,
+      "notes": "Rejected PR by jplatte (co-maintainer), accepted by davidpdrsn. Problem statement must not mention 'error message' or 'fallback' to avoid leaking the answer.",
+      "role": "primary"
+    },
+    {
+      "id": "axum-911",
+      "repo": "tokio-rs/axum",
+      "problem": "Handlers that call several fallible operations whose error types each implement `IntoResponse` cannot use `?` uniformly: there is no common error type to convert into, so code is littered with `.map_err(IntoResponse::into_response)`. Provide a way for handlers to use `?` on any error type that implements `IntoResponse`.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 911,
+        "title": "feat: add response::Error",
+        "closed_at": "2022-04-17T08:31:03Z",
+        "approach": "Adds `pub struct Error(Response)` in axum-core/src/response/error.rs implementing `IntoResponse`, with a long list of concrete `From` impls (`From<StatusCode>`, `From<()>`, `From<Infallible>`, `From<Result<T, E>>`, `From<Response<B>>`, `From<response::Parts>`, `From<Full<Bytes>>`, `From<Empty<Bytes>>`, ...) because a blanket `From<T: IntoResponse>` conflicts with std's `From<T> for T` when `Error: IntoResponse`.",
+        "reason": [
+          {
+            "quote": "Specifically it needs to beat `.map_err(IntoResponse::into_response)?` to be justified imo.",
+            "url": "https://github.com/tokio-rs/axum/pull/911#issuecomment-1090384423",
+            "by": "davidpdrsn"
+          },
+          {
+            "quote": "I think we should go with https://github.com/tokio-rs/axum/pull/921 instead as its simpler and more flexible. I'll close this for now.",
+            "url": "https://github.com/tokio-rs/axum/pull/911#issuecomment-1100831189",
+            "by": "davidpdrsn"
+          }
+        ],
+        "reviewer": "davidpdrsn, jplatte",
+        "url": "https://github.com/tokio-rs/axum/pull/911",
+        "files": [
+          "axum-core/src/response/error.rs",
+          "axum-core/src/response/mod.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 921,
+        "title": "Add `response::ErrorResponse` and `response::Result`",
+        "merged_at": "2022-04-21T14:24:30Z",
+        "approach": "Adds `pub struct ErrorResponse(Response)` with a single blanket `impl<T: IntoResponse> From<T> for ErrorResponse` (ErrorResponse itself does not implement IntoResponse, avoiding the coherence conflict), plus `pub type Result<T, E = ErrorResponse>` and `impl<T: IntoResponse> IntoResponse for Result<T>` in axum-core/src/response/mod.rs, re-exported from axum::response.",
+        "url": "https://github.com/tokio-rs/axum/pull/921",
+        "files": [
+          "axum-core/CHANGELOG.md",
+          "axum-core/src/response/mod.rs",
+          "axum/CHANGELOG.md",
+          "axum/src/response/mod.rs"
+        ],
+        "base_sha": "061e66c236ed1278c0dc4e67edffa8b36a8bb646"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": false
+      },
+      "distinguishing_signals": [
+        "rejected: new file axum-core/src/response/error.rs; `impl IntoResponse for Error`; many per-type `impl From<...> for Error`",
+        "accepted: single generic `impl<T> From<T> for ErrorResponse where T: IntoResponse`",
+        "accepted: `pub type Result<T, E = ErrorResponse>` alias"
+      ],
+      "tempting": 2,
+      "notes": "Same author (npmccallum) opened both; #921 was opened as an alternative while #911 was still under review (parallel, not sequential). Maintainer picked #921.",
+      "role": "control"
+    },
+    {
+      "id": "axum-1681",
+      "repo": "tokio-rs/axum",
+      "problem": "When the `Form` extractor fails to deserialize a syntactically valid but semantically invalid request body (e.g. a missing or wrongly-typed field), axum responds with 400 Bad Request. For request bodies, 422 Unprocessable Entity is the more appropriate status (and matches `Json`). Adjust the status codes accordingly.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 1681,
+        "title": "Use 422 Unprocessable Entity for form deserialization errors",
+        "closed_at": "2023-01-13T09:08:52Z",
+        "approach": "Changes the status of the existing `FailedToDeserializeForm` rejection (axum/src/extract/rejection.rs) from 400 to `StatusCode::UNPROCESSABLE_ENTITY` across the board, and the same in axum-extra's form extractor; this also changes GET query-string forms to 422.",
+        "reason": [
+          {
+            "quote": "Good catch! Another reason testing is important. I think adding another variant to `FormRejection` is the simplest approach. I went ahead and implemented it in https://github.com/tokio-rs/axum/pull/1683.",
+            "url": "https://github.com/tokio-rs/axum/pull/1681#issuecomment-1374434539",
+            "by": "davidpdrsn"
+          }
+        ],
+        "reviewer": "davidpdrsn",
+        "url": "https://github.com/tokio-rs/axum/pull/1681",
+        "files": [
+          "axum-extra/src/extract/form.rs",
+          "axum/src/extract/rejection.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 1683,
+        "title": "Use `422 Unprocessable Entity` for `Form` deserialization errors, except `GET` and `HEAD` requests",
+        "merged_at": "2023-02-17T08:59:02Z",
+        "approach": "Adds a new rejection `FailedToDeserializeFormBody` (422) to `FormRejection` in axum/src/extract/rejection.rs, used only when the form comes from the body; query-sourced forms keep `FailedToDeserializeForm` (400). Adds `deserialize_error_status_codes` test in axum/src/form.rs and updates a debug_handler .stderr snapshot.",
+        "url": "https://github.com/tokio-rs/axum/pull/1683",
+        "files": [
+          "axum-macros/tests/debug_handler/fail/wrong_return_type.stderr",
+          "axum/CHANGELOG.md",
+          "axum/src/extract/rejection.rs",
+          "axum/src/form.rs"
+        ],
+        "base_sha": "e6ff0281ae55ecfd051699b045e6eae4b033cecf"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": false
+      },
+      "distinguishing_signals": [
+        "rejected: edits the status of existing `FailedToDeserializeForm` to 422",
+        "accepted: new `pub struct FailedToDeserializeFormBody` rejection variant",
+        "accepted: test asserting both 400 (GET query) and 422 (body)"
+      ],
+      "tempting": 3,
+      "notes": "The problem with the rejected approach was found by its author in-thread and the maintainer chose the fix; the problem statement above mentions the GET constraint, which makes the case easier — drop that sentence to make it harder. #1683 opened before #1681 closed.",
+      "role": "control",
+      "problem_original": "When the `Form` extractor fails to deserialize a syntactically valid but semantically invalid request body (e.g. a missing or wrongly-typed field), axum responds with 400 Bad Request. For request bodies, 422 Unprocessable Entity is the more appropriate status (and matches `Json`). Note that `Form` also reads from the query string for GET/HEAD requests, where 400 must remain the status (see discussion in #1378). Adjust the status codes accordingly.",
+      "problem_edit": "The sentence is the reason the rejected approach failed."
+    },
+    {
+      "id": "axum-1655",
+      "repo": "tokio-rs/axum",
+      "problem": "`axum::extract::Multipart` fields borrow the `Multipart` extractor, which makes it impossible to turn a multipart upload into a `'static` stream (for example to forward field contents elsewhere without buffering whole fields). Provide a way to stream multipart fields without buffering, without allowing the misuse that the underlying `multer` crate forbids (reading two fields concurrently).",
+      "issue_number": null,
+      "rejected": {
+        "pr": 1655,
+        "title": "Support streaming `Multipart` fields without buffering",
+        "closed_at": "2023-01-13T09:30:18Z",
+        "approach": "Adds `Multipart::into_stream(F)` taking a mapping closure `F: FnMut(Field<'_>) -> T` (and `Field::into_stream`) to the core `axum::extract::Multipart`, trying to keep field exclusivity enforced at compile time via the `Field<'_>` borrow. Review showed the closure can still return `field.into_stream()` and break exclusivity at runtime.",
+        "reason": [
+          {
+            "quote": "I've realized that this API can still be misused as you can do this: ... I'll convert this to a draft while I explore other paths.",
+            "url": "https://github.com/tokio-rs/axum/pull/1655#issuecomment-1373400942",
+            "by": "davidpdrsn"
+          },
+          {
+            "quote": "I think we should move to checking lifetimes at runtime similar to what `multer` is doing. I can't find a nice way to make it work otherwise, and our current API is too limiting. I'll make a new PR for that.",
+            "url": "https://github.com/tokio-rs/axum/pull/1655#issuecomment-1381536546",
+            "by": "davidpdrsn"
+          }
+        ],
+        "reviewer": "jplatte, davidpdrsn",
+        "url": "https://github.com/tokio-rs/axum/pull/1655",
+        "files": [
+          "axum/src/extract/multipart.rs (inferred: PR head ref was later reset to its base, diff not recoverable)"
+        ]
+      },
+      "accepted": {
+        "pr": 1692,
+        "title": "Add `axum_extra::extract::Multipart`",
+        "merged_at": "2023-03-03T09:15:10Z",
+        "approach": "Adds a separate `axum_extra::extract::Multipart` (axum-extra/src/extract/multipart.rs) whose `Field` is `'static` and implements `Stream`; field exclusivity is enforced at runtime like multer. Provides `Multipart::into_stream() -> impl Stream<Item = Result<Field, MultipartError>> + 'static`, `next_field`, `Field::{bytes,text,chunk}`. Core axum Multipart unchanged.",
+        "url": "https://github.com/tokio-rs/axum/pull/1692",
+        "files": [
+          "axum-extra/CHANGELOG.md",
+          "axum-extra/Cargo.toml",
+          "axum-extra/src/extract/mod.rs",
+          "axum-extra/src/extract/multipart.rs",
+          "axum-extra/src/lib.rs"
+        ],
+        "base_sha": "416a0568d3cdd3d77886b69a25cd08bf9c051ded"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": true,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: changes core axum/src/extract/multipart.rs; closure-based `into_stream(F)` with `Field<'_>` lifetime",
+        "accepted: new axum-extra/src/extract/multipart.rs with `pub struct Field` (no lifetime param) and `impl Stream for Field`",
+        "accepted: `pub fn into_stream(self) -> impl Stream<...> + Send + 'static`"
+      ],
+      "tempting": 2,
+      "notes": "Both PRs by davidpdrsn. The rejected PR's head ref was later force-reset (same branch name `multipart-stream` reused for #1692), so its diff is not recoverable from refs/pull/1655/head; files listed are inferred.",
+      "role": "primary"
+    },
+    {
+      "id": "axum-1766",
+      "repo": "tokio-rs/axum",
+      "problem": "`StreamBody` requires the wrapped stream to yield `Result<_, E>` items, which makes returning an infallible stream of chunks (e.g. `Stream<Item = Bytes>`) awkward: users have to wrap every item in `Ok`, and the error type is unconstrained. Improve the API for building streaming response bodies so both infallible and fallible streams are easy to use.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 1766,
+        "title": "Require `StreamBody` to be infallible, add `TryStreamBody`",
+        "closed_at": "2023-03-12T17:09:51Z",
+        "approach": "Changes `StreamBody<S>` (axum/src/body/stream_body.rs) to require items `impl Into<Bytes>` (infallible) and adds a new public `TryStreamBody<S, T = DefaultOnError>` wrapper for `TryStream`s with an `on_error` callback; updates axum-extra's AsyncReadBody/JsonLines accordingly.",
+        "reason": [
+          {
+            "quote": "I'll close this for now but added it to the 0.7.0 todo list. I think now that we have our own body type that implements stream directly we might not need these wrappers. Can instead have `impl Stream for Body` and `Body::from_stream`.",
+            "url": "https://github.com/tokio-rs/axum/pull/1766#issuecomment-1465250312",
+            "by": "davidpdrsn"
+          }
+        ],
+        "reviewer": "davidpdrsn (author), jplatte",
+        "url": "https://github.com/tokio-rs/axum/pull/1766",
+        "files": [
+          "axum-extra/CHANGELOG.md",
+          "axum-extra/Cargo.toml",
+          "axum-extra/src/body/async_read_body.rs",
+          "axum-extra/src/json_lines.rs",
+          "axum/CHANGELOG.md",
+          "axum/src/body/mod.rs",
+          "axum/src/body/stream_body.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 1848,
+        "title": "Add `Body::from_stream`",
+        "merged_at": "2023-03-14T08:13:19Z",
+        "approach": "Removes `StreamBody` entirely and adds `axum_core::body::Body::from_stream<S: TryStream>(stream)` (private inner `StreamBody<S>` adapter) plus `impl IntoResponse for Body` in axum-core/src/body.rs; updates axum-extra users. Targets the v0.7.0 branch.",
+        "url": "https://github.com/tokio-rs/axum/pull/1848",
+        "files": [
+          "axum-core/Cargo.toml",
+          "axum-core/src/body.rs",
+          "axum-extra/src/body/async_read_body.rs",
+          "axum-extra/src/extract/multipart.rs",
+          "axum-extra/src/json_lines.rs",
+          "axum/src/body/mod.rs",
+          "axum/src/body/stream_body.rs",
+          "axum/src/test_helpers/mod.rs"
+        ],
+        "base_sha": "c8cd23ff430fc6316d3a4ec1cc67bde325fe17c3"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": true,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: new public type `TryStreamBody` in axum/src/body/stream_body.rs; `StreamBody` kept",
+        "accepted: deletes axum/src/body/stream_body.rs; adds `pub fn from_stream` on `axum_core::body::Body`",
+        "accepted: no new public wrapper type"
+      ],
+      "tempting": 2,
+      "notes": "Both by davidpdrsn on the unreleased v0.7.0 branch (base_sha is on that branch, not main). Earlier contributor PR #1699 ('StreamBody responds with Bytes, not Result') is a related rejected attempt. Breaking-change context: only acceptable because 0.7 was in development.",
+      "role": "primary"
+    },
+    {
+      "id": "axum-3464",
+      "repo": "tokio-rs/axum",
+      "problem": "Some applications expose undocumented internal endpoints and want requests with an unsupported HTTP method to look like 404 Not Found without revealing which methods are supported. Currently `MethodRouter` always adds an `Allow` header listing the supported methods when a method is not matched. Make it possible to avoid leaking the `Allow` header in that setup.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 3464,
+        "title": "Support skipping the `Allow` header in method routing",
+        "closed_at": "2025-09-12T07:25:11Z",
+        "approach": "Adds a new builder method `MethodRouter::skip_allow_header(self) -> Self` (axum/src/routing/method_routing.rs, docs in axum/src/docs/method_routing/skip_allow_header.md) that must be called on each method router to suppress the header.",
+        "reason": [
+          {
+            "quote": "I think this would be brittle for what you're trying to achieve. You would have to call the method on every single method router in your app. ... Finally, I think what you're really looking for is `method_not_allowed_fallback`.",
+            "url": "https://github.com/tokio-rs/axum/pull/3464#issuecomment-3284075257",
+            "by": "mladedav"
+          }
+        ],
+        "reviewer": "mladedav, jplatte",
+        "url": "https://github.com/tokio-rs/axum/pull/3464",
+        "files": [
+          "axum/src/docs/method_routing/skip_allow_header.md",
+          "axum/src/routing/method_routing.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 3465,
+        "title": "routing: omit Allow header when method_not_allowed_fallback is config…",
+        "merged_at": "2025-09-16T08:29:02Z",
+        "approach": "No new API. In axum/src/routing/route.rs the `Allow` header is only set when the final response status is 405, so when a configured `method_not_allowed_fallback` returns something else (e.g. 404) no `Allow` header is added. Documents this in fallback.md and adds test `mna_fallback_not_405`.",
+        "url": "https://github.com/tokio-rs/axum/pull/3465",
+        "files": [
+          "axum/src/docs/method_routing/fallback.md",
+          "axum/src/routing/route.rs",
+          "axum/src/routing/tests/fallback.rs"
+        ],
+        "base_sha": "10734681632b9fdebba1650a18d75dfebf678909"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": true,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: new `pub fn skip_allow_header` on MethodRouter",
+        "accepted: no new pub fn; condition `if res.status() == METHOD_NOT_ALLOWED { set_allow_header(...) }` in route.rs",
+        "accepted: test in axum/src/routing/tests/fallback.rs asserting `headers().get(ALLOW) == None` with a 404 fallback"
+      ],
+      "tempting": 3,
+      "notes": "Clean sequential case: same author, rejected closed before accepted opened. The problem statement hints at 'custom handling for unmatched methods'; removing that phrase makes it harder.",
+      "role": "primary",
+      "problem_original": "Some applications expose undocumented internal endpoints and want requests with an unsupported HTTP method to look like 404 Not Found without revealing which methods are supported. Currently `MethodRouter` always adds an `Allow` header listing the supported methods when a method is not matched, even when the application has configured custom handling for unmatched methods. Make it possible to avoid leaking the `Allow` header in that setup.",
+      "problem_edit": "The clause points at the accepted mechanism (method_not_allowed_fallback)."
+    },
+    {
+      "id": "tokio-4538",
+      "repo": "tokio-rs/tokio",
+      "problem": "Users of `JoinSet` want to associate a key with each spawned task so they can tell which task finished (including when it panicked or was cancelled) and abort individual tasks by key. Provide a keyed collection of spawned tasks with these capabilities.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 4538,
+        "title": "task: implement `JoinMap`",
+        "closed_at": "2022-04-25T17:31:19Z",
+        "approach": "Adds `tokio::task::JoinMap<K, V, S = RandomState>` in tokio/src/task/join_map.rs, implemented directly on the internal `IdleNotifiedSet` (tokio/src/util/idle_notified_set.rs) storing keys alongside JoinHandles, with hashing helpers (`Key`, `TaskKey`, `PreHashedKey`, `DynKey`), and extends `AbortHandle` in tokio/src/runtime/task/abort.rs.",
+        "reason": [
+          {
+            "quote": "My vote is to hold back on `JoinMap` and add the id concept to `JoinSet`. We can provide `JoinMap` in `tokio-util`.",
+            "url": "https://github.com/tokio-rs/tokio/pull/4538#issuecomment-1065614755",
+            "by": "carllerche"
+          }
+        ],
+        "reviewer": "carllerche, Darksonn",
+        "url": "https://github.com/tokio-rs/tokio/pull/4538",
+        "files": [
+          "tokio/src/runtime/task/abort.rs",
+          "tokio/src/task/join_map.rs",
+          "tokio/src/task/mod.rs",
+          "tokio/src/util/idle_notified_set.rs",
+          "tokio/src/util/mod.rs",
+          "tokio/tests/task_join_map.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 4640,
+        "title": "util: implement `JoinMap`",
+        "merged_at": "2022-04-26T17:25:48Z",
+        "approach": "Implements `JoinMap<K, V, S>` in tokio-util (tokio-util/src/task/join_map.rs, `tokio_util::task::JoinMap`) on top of public tokio APIs: a `JoinSet` plus a `HashMap` of `AbortHandle`s keyed via the new task IDs (#4630), with `spawn`, `spawn_on`, `spawn_local`, `join_one -> Option<(K, Result<V, JoinError>)>`, `abort(key)`. Requires `tokio_unstable` cfg (.cargo/config).",
+        "url": "https://github.com/tokio-rs/tokio/pull/4640",
+        "files": [
+          ".cargo/config",
+          "README.md",
+          "tokio-util/Cargo.toml",
+          "tokio-util/src/task/join_map.rs",
+          "tokio-util/src/task/mod.rs",
+          "tokio-util/tests/task_join_map.rs",
+          "tokio/Cargo.toml",
+          "tokio/README.md",
+          "tokio/src/runtime/task/abort.rs"
+        ],
+        "base_sha": "1d3f12304e29dbb8fe3ef4089d01d5acb9edaae1"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": true,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: new file tokio/src/task/join_map.rs (inside the tokio crate)",
+        "rejected: modifies tokio/src/util/idle_notified_set.rs",
+        "accepted: new file tokio-util/src/task/join_map.rs; tokio-util/Cargo.toml bumps tokio dependency",
+        "accepted: keys tracked through task Id / AbortHandle rather than in tokio internals"
+      ],
+      "tempting": 3,
+      "notes": "Same author (hawkw) for both; a prerequisite PR (#4630 task IDs) was merged between them. The rejection is about crate placement / API commitment.",
+      "role": "primary"
+    },
+    {
+      "id": "tokio-3516",
+      "repo": "tokio-rs/tokio",
+      "problem": "Deeply nested `FuturesUnordered` workloads where most leaf futures are ready suffer from Tokio's cooperative scheduling budget: forced yields cause huge numbers of useless polls (observed ~50% CPU in `wake_by_ref` from `poll_proceed`). Users need a way to opt out of cooperative scheduling.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 3516,
+        "title": "coop: allow disabling cooperative scheduling",
+        "closed_at": "2021-03-21T08:35:35Z",
+        "approach": "Adds a runtime-wide switch `runtime::Builder::no_coop(&mut self)` (tokio/src/runtime/builder.rs) that is threaded through the schedulers (basic_scheduler, thread_pool worker, LocalSet, enter) so `coop` budgeting is disabled for every task on that runtime. Targeted the 0.2.x branch.",
+        "reason": [
+          {
+            "quote": "I'm worried about the next user of tokio that comes along, finds some problem that they think is due to coop, throw in a `no_coop()` call on their runtime constructor, and then forgets about it. And then complains about weird tail latency spikes in tokio :)",
+            "url": "https://github.com/tokio-rs/tokio/pull/3516#issuecomment-786168288",
+            "by": "jonhoo"
+          },
+          {
+            "quote": "I guess now that #3547 is merged, we should just close this?",
+            "url": "https://github.com/tokio-rs/tokio/pull/3516#issuecomment-803275798",
+            "by": "Darksonn"
+          }
+        ],
+        "reviewer": "jonhoo, Darksonn",
+        "url": "https://github.com/tokio-rs/tokio/pull/3516",
+        "files": [
+          "tokio/src/coop.rs",
+          "tokio/src/runtime/basic_scheduler.rs",
+          "tokio/src/runtime/blocking/shutdown.rs",
+          "tokio/src/runtime/builder.rs",
+          "tokio/src/runtime/enter.rs",
+          "tokio/src/runtime/handle.rs",
+          "tokio/src/runtime/shell.rs",
+          "tokio/src/runtime/thread_pool/mod.rs",
+          "tokio/src/runtime/thread_pool/worker.rs",
+          "tokio/src/task/local.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 3547,
+        "title": "coop: expose an unconstrained() opt-out",
+        "merged_at": "2021-03-09T18:10:16Z",
+        "approach": "Adds a per-future opt-out: `tokio::task::unconstrained(fut) -> Unconstrained<F>` (tokio/src/task/unconstrained.rs) whose `poll` runs the inner future inside `coop::with_unconstrained`, a new pub(crate) helper in tokio/src/coop.rs. No runtime Builder change.",
+        "url": "https://github.com/tokio-rs/tokio/pull/3547",
+        "files": [
+          "tokio/src/coop.rs",
+          "tokio/src/macros/cfg.rs",
+          "tokio/src/task/mod.rs",
+          "tokio/src/task/unconstrained.rs",
+          "tokio/tests/rt_common.rs"
+        ],
+        "base_sha": "7de18af82cfd8b1aebcacfe86d2650f400aaeea8"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: new `Builder::no_coop()` method; runtime-wide flag plumbed into schedulers",
+        "accepted: new file tokio/src/task/unconstrained.rs with `pub fn unconstrained` and `pub struct Unconstrained<F>`",
+        "accepted: no changes to tokio/src/runtime/builder.rs"
+      ],
+      "tempting": 3,
+      "notes": "Same author (krallin); the accepted PR was opened during the review discussion (parallel). Rejected PR targeted v0.2.x, accepted targeted 1.x master, so file layouts differ. Key rejection voice (jonhoo) was a Tokio contributor/reviewer.",
+      "role": "primary",
+      "problem_original": "Deeply nested `FuturesUnordered` workloads where most leaf futures are ready suffer from Tokio's cooperative scheduling budget: forced yields cause huge numbers of useless polls (observed ~50% CPU in `wake_by_ref` from `poll_proceed`). Users need a way to opt out of cooperative scheduling for code that does not work well with it.",
+      "problem_edit": "'For code' points at the per-future opt-out that was accepted."
+    },
+    {
+      "id": "tokio-6224",
+      "repo": "tokio-rs/tokio",
+      "problem": "Users frequently want a spawned task to be cancelled automatically when the handle to it is dropped (structured-concurrency style), but `JoinHandle` detaches the task on drop. Provide a utility in tokio-util for tying a spawned task's lifetime to a handle.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 6224,
+        "title": "feat: added spawn_aborting",
+        "closed_at": "2024-08-20T08:59:09Z",
+        "approach": "Adds a public module tokio-util/src/task/spawn_aborting.rs with a free function `spawn_aborting<F>(future) -> DropHandle<F::Output>` that calls `tokio::spawn` and a `pub struct DropHandle<T>(JoinHandle<T>)` whose `Drop` aborts; exposes inner handle access instead of wrapper methods.",
+        "reason": [
+          {
+            "quote": "I don't like this name. It sounds like something that would immediately make something abort.",
+            "url": "https://github.com/tokio-rs/tokio/pull/6224#discussion_r1438624972",
+            "by": "Darksonn"
+          },
+          {
+            "quote": "My personal preference would be to make the spawn function a function on the `DropHandle` type. IMO, we also ought to have a `DropHandle::new()` constructor that takes a `JoinHandle`, so that the abort-on-drop behavior can be added to `JoinHandle`s returned by `tokio::task::spawn_local` or `tokio::task::spawn_blocking`.",
+            "url": "https://github.com/tokio-rs/tokio/pull/6224#discussion_r1463719955",
+            "by": "hawkw"
+          }
+        ],
+        "reviewer": "Darksonn, hawkw",
+        "url": "https://github.com/tokio-rs/tokio/pull/6224",
+        "files": [
+          "tokio-util/src/task/mod.rs",
+          "tokio-util/src/task/spawn_aborting.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 6786,
+        "title": "Add `AbortOnDropHandle` type",
+        "merged_at": "2024-08-20T08:58:04Z",
+        "approach": "Adds `tokio_util::task::AbortOnDropHandle<T>(JoinHandle<T>)` (tokio-util/src/task/abort_on_drop.rs) constructed from any existing JoinHandle via `AbortOnDropHandle::new(handle)`, with wrapper methods `abort`, `is_finished`, `abort_handle`, a `Future` impl, and abort in `Drop`. No spawn function.",
+        "url": "https://github.com/tokio-rs/tokio/pull/6786",
+        "files": [
+          "tokio-util/src/task/abort_on_drop.rs",
+          "tokio-util/src/task/mod.rs",
+          "tokio-util/tests/abort_on_drop.rs"
+        ],
+        "base_sha": "ff3f2a8878c04141a0e3e3c0f65a74c9f31a2e11"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: free fn `pub fn spawn_aborting` that spawns internally; type named `DropHandle`",
+        "accepted: `pub struct AbortOnDropHandle<T>` with `pub fn new(handle: JoinHandle<T>)`",
+        "accepted: new file tokio-util/src/task/abort_on_drop.rs and tests/abort_on_drop.rs"
+      ],
+      "tempting": 2,
+      "notes": "Rejected PR stalled after review; it was closed by Darksonn as 'added in #6786'. The objections are API-shape/naming, recorded months before #6786.",
+      "role": "primary"
+    },
+    {
+      "id": "tokio-4238",
+      "repo": "tokio-rs/tokio",
+      "problem": "Issue #3903: users want a collection that owns a set of spawned tasks, lets them await whichever task finishes next, and aborts the remaining tasks when the collection is dropped. Provide such a task-set type.",
+      "issue_number": 3903,
+      "rejected": {
+        "pr": 4238,
+        "title": "add taskset api",
+        "closed_at": "2022-02-08T09:00:23Z",
+        "approach": "Adds `TaskSet<T>` in tokio-util/src/taskset.rs built purely on public `JoinHandle`s stored in a collection, with `next_finished` polling every handle (O(n)), plus a `TaskSetStream` wrapper in tokio-stream (tokio-stream/src/wrappers/task.rs).",
+        "reason": [
+          {
+            "quote": "You're probably going to need some sort of custom waker to get around it.",
+            "url": "https://github.com/tokio-rs/tokio/pull/4238#issuecomment-979471524",
+            "by": "Darksonn"
+          },
+          {
+            "quote": "putting it in Tokio itself is an option since you can then put the data in the task object itself.",
+            "url": "https://github.com/tokio-rs/tokio/pull/4238#issuecomment-980025964",
+            "by": "Darksonn"
+          }
+        ],
+        "reviewer": "Darksonn",
+        "url": "https://github.com/tokio-rs/tokio/pull/4238",
+        "files": [
+          "tokio-stream/Cargo.toml",
+          "tokio-stream/src/macros.rs",
+          "tokio-stream/src/wrappers.rs",
+          "tokio-stream/src/wrappers/task.rs",
+          "tokio-util/Cargo.toml",
+          "tokio-util/src/cfg.rs",
+          "tokio-util/src/lib.rs",
+          "tokio-util/src/taskset.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 4335,
+        "title": "Add `JoinSet`",
+        "merged_at": "2022-02-01T22:17:10Z",
+        "approach": "Adds `tokio::task::JoinSet<T>` (tokio/src/task/join_set.rs) inside the tokio crate using a new `IdleNotifiedSet` (tokio/src/util/idle_notified_set.rs) on top of the intrusive `linked_list`, plus a task-internal join waker hook (`set_join_waker` in runtime/task/join.rs, harness.rs, raw.rs) so completion is O(1); includes loom tests.",
+        "url": "https://github.com/tokio-rs/tokio/pull/4335",
+        "files": [
+          "tokio/Cargo.toml",
+          "tokio/src/runtime/basic_scheduler.rs",
+          "tokio/src/runtime/task/harness.rs",
+          "tokio/src/runtime/task/join.rs",
+          "tokio/src/runtime/task/raw.rs",
+          "tokio/src/runtime/tests/loom_join_set.rs",
+          "tokio/src/runtime/tests/mod.rs",
+          "tokio/src/task/join_set.rs",
+          "tokio/src/task/mod.rs",
+          "tokio/src/util/idle_notified_set.rs",
+          "tokio/src/util/linked_list.rs",
+          "tokio/src/util/mod.rs",
+          "tokio/src/util/wake.rs",
+          "tokio/tests/async_send_sync.rs",
+          "tokio/tests/task_join_set.rs"
+        ],
+        "base_sha": "9e38ebcaa957d5422a0946ae8536509fe0d76d94"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: new tokio-util/src/taskset.rs and tokio-stream wrapper; iterates all JoinHandles to find a finished one",
+        "accepted: new tokio/src/task/join_set.rs and tokio/src/util/idle_notified_set.rs",
+        "accepted: modifies tokio/src/runtime/task/{join,harness,raw}.rs (join waker plumbing)"
+      ],
+      "tempting": 2,
+      "notes": "Inverse of tokio-4538: here the accepted design moved INTO tokio core because efficient implementation needs task internals. Accepted PR (by maintainer) was opened while the rejected one was still open; review comments predate it.",
+      "role": "primary",
+      "problem_original": "Issue #3903: users want a collection that owns a set of spawned tasks, lets them await whichever task finishes next, and aborts the remaining tasks when the collection is dropped. Provide such a task-set type with efficient (not O(n) per completion) waiting.",
+      "problem_edit": "The parenthetical is the reviewers' objection to the rejected design."
+    },
+    {
+      "id": "tokio-3105",
+      "repo": "tokio-rs/tokio",
+      "problem": "In Tokio 1.0 the `mpsc::Sender` lost its poll-based `poll_ready`/`try_send` style API, so code that implements `Sink` or other poll-based interfaces on top of a bounded mpsc sender has no good way to do so. Provide a poll-based wrapper around `tokio::sync::mpsc::Sender` in tokio-util that does not allocate per sent item.",
+      "issue_number": null,
+      "rejected": {
+        "pr": 3105,
+        "title": "Add tokio02-style mpsc sender",
+        "closed_at": "2021-01-31T14:07:48Z",
+        "approach": "Adds a generic `pollify` module (tokio-util/src/pollify.rs: `trait AsyncOp`, `struct Pollify<A>`) and a lifetime-parameterised `Sender<'a, T>` in tokio-util/src/sync/mpsc.rs that stores the in-flight `reserve()` future in a self-referential pinned struct using `unsafe` (`FutureBox` with `unsafe impl Send/Sync`, `map_unchecked_mut`).",
+        "reason": [
+          {
+            "quote": "It involves some serious unsafe code to soundly build a self-referential struct, and there are some things I would have to try out in miri before I am happy with it.",
+            "url": "https://github.com/tokio-rs/tokio/pull/3105#issuecomment-747357472",
+            "by": "Darksonn"
+          },
+          {
+            "quote": "Closing this, as I have just opened #3490, which implements this without unsafe, while still avoiding allocating for every sent item. The new PR also avoids the lifetime issues that this PR runs into.",
+            "url": "https://github.com/tokio-rs/tokio/pull/3105#issuecomment-770387886",
+            "by": "Darksonn"
+          }
+        ],
+        "reviewer": "Darksonn",
+        "url": "https://github.com/tokio-rs/tokio/pull/3105",
+        "files": [
+          "tokio-util/Cargo.toml",
+          "tokio-util/src/cfg.rs",
+          "tokio-util/src/lib.rs",
+          "tokio-util/src/pollify.rs",
+          "tokio-util/src/sync/mod.rs",
+          "tokio-util/src/sync/mpsc.rs",
+          "tokio-util/src/sync/tests/mod.rs",
+          "tokio-util/src/sync/tests/mpsc.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 3490,
+        "title": "Add pollable mpsc::Sender",
+        "merged_at": "2021-03-04T16:29:30Z",
+        "approach": "Adds `tokio_util::sync::PollSender<T>` (tokio-util/src/sync/mpsc.rs) holding the reserve future in the safe `ReusableBoxFuture` utility (no per-send allocation), with `start_send`, `poll_send_done`, `is_ready`, `is_closed`, `clone_inner`; no lifetime parameter.",
+        "url": "https://github.com/tokio-rs/tokio/pull/3490",
+        "files": [
+          "tokio-util/src/sync/mod.rs",
+          "tokio-util/src/sync/mpsc.rs",
+          "tokio-util/tests/mpsc.rs"
+        ],
+        "base_sha": "60d88840f4f3ea6b7d1ced6118a7ddef1290e542"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: new generic tokio-util/src/pollify.rs module and `unsafe impl` blocks",
+        "rejected: `pub struct Sender<'a, T>` with a lifetime parameter",
+        "accepted: `pub struct PollSender<T>` using `ReusableBoxFuture`, no new unsafe",
+        "accepted: only touches tokio-util/src/sync/{mod,mpsc}.rs and tokio-util/tests/mpsc.rs"
+      ],
+      "tempting": 2,
+      "notes": "Accepted PR opened by the reviewer minutes before closing the rejected one; the 'serious unsafe' concern predates it by six weeks.",
+      "role": "primary"
+    },
+    {
+      "id": "tokio-3639",
+      "repo": "tokio-rs/tokio",
+      "problem": "Issue #3350: `mpsc::Receiver::try_recv` was removed before Tokio 1.0 because it could return `Empty` while a send had already completed (a racing sender reserved an earlier slot but had not finished writing). Bring back `try_recv` for bounded and unbounded mpsc receivers with correct semantics: it must not report `Empty` when a message whose send has completed is in the channel.",
+      "issue_number": 3350,
+      "rejected": {
+        "pr": 3639,
+        "title": "sync: Add `try_recv` back",
+        "closed_at": "2021-09-18T07:27:17Z",
+        "approach": "Distinguishes 'slot not ready' from 'empty' inside the block list: adds `Read::NotReady`, a `HAS_NEXT` bit in each block's `ready_slots`, and `write_in_progress()` look-ahead logic in tokio/src/sync/mpsc/block.rs, then has `try_recv` in chan.rs loop/spin (later: park on an extra `not_ready_waker: AtomicWaker`) until the in-progress write lands.",
+        "reason": [
+          {
+            "quote": "Generally speaking, we try to avoid spinning. It’s going to be tricky to avoid that here though.",
+            "url": "https://github.com/tokio-rs/tokio/pull/3639#issuecomment-806022489",
+            "by": "carllerche"
+          },
+          {
+            "quote": "We did not end up accepting it because it was complicated and a simpler solution was available, but the solution that just got merged used several ideas from your PR",
+            "url": "https://github.com/tokio-rs/tokio/pull/3639#issuecomment-922232688",
+            "by": "Darksonn"
+          }
+        ],
+        "reviewer": "carllerche, Darksonn",
+        "url": "https://github.com/tokio-rs/tokio/pull/3639",
+        "files": [
+          "tokio/src/sync/mpsc/block.rs",
+          "tokio/src/sync/mpsc/bounded.rs",
+          "tokio/src/sync/mpsc/chan.rs",
+          "tokio/src/sync/mpsc/error.rs",
+          "tokio/src/sync/mpsc/unbounded.rs",
+          "tokio/src/sync/tests/loom_list.rs",
+          "tokio/src/sync/tests/loom_mpsc.rs",
+          "tokio/tests/sync_mpsc.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 4113,
+        "title": "sync: implement try_recv for mpsc channels",
+        "merged_at": "2021-09-18T07:27:17Z",
+        "approach": "Adds `list::Rx::try_pop` returning a new `TryPopResult { Ok, Empty, Closed, Busy }` (tokio/src/sync/mpsc/list.rs); `chan::Rx::try_recv` returns on Ok/Empty/Closed and on `Busy` wakes any registered `rx_waker`, registers a `CachedParkThread` waker in the existing `rx_waker` slot and parks the thread until the racing send completes. Adds `TryRecvError` and `try_recv` on bounded/unbounded receivers.",
+        "url": "https://github.com/tokio-rs/tokio/pull/4113",
+        "files": [
+          "tokio/src/sync/mpsc/bounded.rs",
+          "tokio/src/sync/mpsc/chan.rs",
+          "tokio/src/sync/mpsc/error.rs",
+          "tokio/src/sync/mpsc/list.rs",
+          "tokio/src/sync/mpsc/unbounded.rs",
+          "tokio/src/sync/tests/loom_mpsc.rs",
+          "tokio/tests/sync_mpsc.rs"
+        ],
+        "base_sha": "57563e218b22b2e2b916fc095ec6cca311494a3c"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: modifies tokio/src/sync/mpsc/block.rs (new `HAS_NEXT` bit, `Read::NotReady`, `write_in_progress`)",
+        "rejected: new field `not_ready_waker: AtomicWaker` in chan",
+        "accepted: `enum TryPopResult` with `Busy` variant in list.rs; block.rs untouched",
+        "accepted: `CachedParkThread` + existing `rx_waker.register_by_ref`"
+      ],
+      "tempting": 2,
+      "notes": "Rejected PR is not a pure spin in its final revision (it also parks), so the diff-level difference is mostly block.rs bit-tricks vs a list-level Busy result. Accepted PR opened by the reviewer while rejected PR was open.",
+      "role": "primary"
+    },
+    {
+      "id": "tokio-3375",
+      "repo": "tokio-rs/tokio",
+      "problem": "Issue #3373: `tokio::fs` lacks an async equivalent of checking whether a path exists (std offers `Path::exists`), so users write `fs::metadata(path).await.is_ok()`. Add an async function to `tokio::fs` for checking whether a path exists.",
+      "issue_number": 3373,
+      "rejected": {
+        "pr": 3375,
+        "title": "Add `fs::exists` function",
+        "closed_at": "2023-03-23T22:13:51Z",
+        "approach": "Adds `pub async fn exists(path: impl AsRef<Path>) -> bool` in tokio/src/fs/exists.rs mirroring `std::path::Path::exists` (metadata via spawn_blocking, mapping any error to `false`), re-exported from tokio::fs.",
+        "reason": [
+          {
+            "quote": "Returning `io::Result<bool>` is much better than `metadata_accessible`. That's an awful name.",
+            "url": "https://github.com/tokio-rs/tokio/pull/3375#issuecomment-758584711",
+            "by": "Darksonn"
+          },
+          {
+            "quote": "I mean, are you should people will do `unwrap_or(false)` if we make it return a `Result`? They'll probably question mark it instead, propagating it on a permissions error.",
+            "url": "https://github.com/tokio-rs/tokio/pull/3375#issuecomment-758609055",
+            "by": "Darksonn"
+          }
+        ],
+        "reviewer": "Darksonn, carllerche",
+        "url": "https://github.com/tokio-rs/tokio/pull/3375",
+        "files": ["tokio/src/fs/exists.rs", "tokio/src/fs/mod.rs"]
+      },
+      "accepted": {
+        "pr": 4299,
+        "title": "Add `fs::try_exists`",
+        "merged_at": "2023-02-21T13:15:54Z",
+        "approach": "Adds `pub async fn try_exists(path: impl AsRef<Path>) -> io::Result<bool>` in tokio/src/fs/try_exists.rs (mirroring the then-unstable `std::fs::try_exists`), returning `Ok(false)` only for NotFound and propagating other errors; adds tokio/tests/fs_try_exists.rs.",
+        "url": "https://github.com/tokio-rs/tokio/pull/4299",
+        "files": [
+          "tokio/src/fs/mod.rs",
+          "tokio/src/fs/try_exists.rs",
+          "tokio/tests/fs_try_exists.rs"
+        ],
+        "base_sha": "3ea5cc5a821699f0f33236292e19574160dd1839"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: `fn exists(...) -> bool` in tokio/src/fs/exists.rs",
+        "accepted: `fn try_exists(...) -> io::Result<bool>` in tokio/src/fs/try_exists.rs",
+        "accepted: test that a permission-denied path yields Err, not false"
+      ],
+      "tempting": 3,
+      "notes": "Rejected PR stalled and was closed after the accepted one merged (closure reason: 'since #4299 was merged'), but the design objection (bool vs io::Result<bool>) was recorded in Jan 2021, before #4299 was opened. Problem statement's last clause hints at the answer; drop 'handling errors such as permission denied correctly' for a harder variant. Part of the critique came from a non-member (Kixunil).",
+      "role": "primary",
+      "problem_original": "Issue #3373: `tokio::fs` lacks an async equivalent of checking whether a path exists (std offers `Path::exists`), so users write `fs::metadata(path).await.is_ok()`. Add an async function to `tokio::fs` for checking whether a path exists, handling errors such as permission denied correctly.",
+      "problem_edit": "The clause about permission-denied errors is the maintainers' objection to the rejected design."
+    },
+    {
+      "id": "tokio-3097",
+      "repo": "tokio-rs/tokio",
+      "problem": "Issues #2965/#3096: code that only has a `tokio::runtime::Handle` (not the owning `Runtime`) cannot block on a future, e.g. when implementing a synchronous trait from inside a thread that has a handle. Add the ability to block on a future through a runtime `Handle`.",
+      "issue_number": 2965,
+      "rejected": {
+        "pr": 3097,
+        "title": "rt: move block_on to handle",
+        "closed_at": "2021-03-16T19:58:03Z",
+        "approach": "Moves the `block_on` machinery from `Runtime` to `Handle` (tokio/src/runtime/handle.rs: `Handle::block_on`, `block_on_with_basic_scheduler`), making the handle able to take the basic scheduler's core via new `take_inner()`/`InnerGuard` and `notify()` in tokio/src/runtime/basic_scheduler.rs; `Runtime::block_on` delegates to it. No special handling for runtime shutdown.",
+        "reason": [
+          {
+            "quote": "How does this handle the case where you shut down the runtime while a handle is blocking on something?",
+            "url": "https://github.com/tokio-rs/tokio/pull/3097#issuecomment-784492137",
+            "by": "Darksonn"
+          },
+          {
+            "quote": "A handle should not hold ownership of any of the scheduler components (like the task queue).",
+            "url": "https://github.com/tokio-rs/tokio/pull/3097#issuecomment-784500332",
+            "by": "LucioFranco"
+          },
+          {
+            "quote": "It will just hang and this is bad UX/hard to debug.",
+            "url": "https://github.com/tokio-rs/tokio/pull/3097#issuecomment-784500942",
+            "by": "LucioFranco"
+          }
+        ],
+        "reviewer": "Darksonn, LucioFranco, carllerche",
+        "url": "https://github.com/tokio-rs/tokio/pull/3097",
+        "files": [
+          "tokio/src/runtime/basic_scheduler.rs",
+          "tokio/src/runtime/handle.rs",
+          "tokio/src/runtime/mod.rs",
+          "tokio/src/runtime/thread_pool/mod.rs"
+        ]
+      },
+      "accepted": {
+        "pr": 3569,
+        "title": "rt: add Handle::block_on",
+        "merged_at": "2021-03-20T09:52:29Z",
+        "approach": "Adds `Handle::block_on` that drives the future on the current thread without taking scheduler ownership, and makes runtime resources fail once the runtime is shut down: timer driver gets an `Inner`/`InnerState` with shutdown flag (tokio/src/time/driver/{mod,handle,entry}.rs), I/O `registration.rs` and blocking fs ops return errors, new `util/error.rs` messages; tests in tokio/tests/rt_handle_block_on.rs.",
+        "url": "https://github.com/tokio-rs/tokio/pull/3569",
+        "files": [
+          "tokio/src/io/driver/registration.rs",
+          "tokio/src/runtime/handle.rs",
+          "tokio/src/runtime/mod.rs",
+          "tokio/src/time/driver/entry.rs",
+          "tokio/src/time/driver/handle.rs",
+          "tokio/src/time/driver/mod.rs",
+          "tokio/src/time/driver/tests/mod.rs",
+          "tokio/src/util/error.rs",
+          "tokio/tests/rt_handle_block_on.rs"
+        ],
+        "base_sha": "e4f76688a00fa2ce81ab6c074700995095c29e1e"
+      },
+      "ordering": {
+        "rejected_closed_before_accepted_opened": false,
+        "rejection_reason_predates_accepted_opened": true
+      },
+      "distinguishing_signals": [
+        "rejected: new pub(crate) `take_inner()` / `InnerGuard` on basic_scheduler so a Handle can own the core",
+        "accepted: no basic_scheduler changes; changes time driver and io registration to error after shutdown",
+        "accepted: new test file tokio/tests/rt_handle_block_on.rs"
+      ],
+      "tempting": 2,
+      "notes": "Accepted PR continues maintainer draft #3549 and was opened (by an Embark contributor, merged by davidpdrsn) after the shutdown objection; the rejected PR was closed only later. Big multi-file change; harder eval case.",
+      "role": "primary",
+      "problem_original": "Issues #2965/#3096: code that only has a `tokio::runtime::Handle` (not the owning `Runtime`) cannot block on a future, e.g. when implementing a synchronous trait from inside a thread that has a handle. Add the ability to block on a future through a runtime `Handle`, with well-defined behaviour when the runtime is shut down while something is blocked through a handle.",
+      "problem_edit": "The clause is the maintainers' objection to the rejected design."
+    }
+  ],
+  "rejected_candidates": [
+    {
+      "ref": "axum#1054",
+      "why": "tokio feature: author handed over; continued in #1382 with the same design"
+    },
+    {
+      "ref": "axum#2479",
+      "why": "serve generic over listener: approved, only delayed for semver; superseded by #2941 with same design"
+    },
+    {
+      "ref": "axum#2643",
+      "why": "generic listener: closed as duplicate of #2479"
+    },
+    {
+      "ref": "axum#3165",
+      "why": "ws read_buffer_size: duplicate of #3178"
+    },
+    {
+      "ref": "axum#3127",
+      "why": "Router::get_route_paths: feature rejected outright, no merged alternative"
+    },
+    {
+      "ref": "axum#3665",
+      "why": "OptionalFromRequest in derive: no design reason, '#3760 fixed the same thing' (same approach)"
+    },
+    {
+      "ref": "axum#1930",
+      "why": "Host extractor port: stale; #2242 merged later without a design rejection"
+    },
+    {
+      "ref": "axum#952/#941",
+      "why": "SpaRouter at root: solved by tower-http ServeDir fallback, no merged axum PR"
+    },
+    {
+      "ref": "axum#1993",
+      "why": "#[debug_middleware]: continued by #2725 with the same design"
+    },
+    {
+      "ref": "axum#3001",
+      "why": "Spoofable PoC: stale, no merged alternative"
+    },
+    {
+      "ref": "axum#2307",
+      "why": "ws header_eq: author closed after non-maintainer disagreement; no alternative"
+    },
+    {
+      "ref": "axum#3965",
+      "why": "boxing ErrorResponse for clippy: maintainer preferred #[allow] but no merged alternative found yet"
+    },
+    {
+      "ref": "axum#2865",
+      "why": "avoid clones: re-opened as #2968 with same changes (split request)"
+    },
+    {
+      "ref": "axum#3751/#3756",
+      "why": "Vec query params: 'standalone crate' rejection, no merged alternative"
+    },
+    {
+      "ref": "axum#3323",
+      "why": "Either FromRequest: footgun concerns, no alternative"
+    },
+    {
+      "ref": "axum#507",
+      "why": "proc-macro-crate: 'be conservative', no alternative"
+    },
+    {
+      "ref": "axum#589",
+      "why": "OrDefault extractor: dropped, no alternative"
+    },
+    {
+      "ref": "axum#3571",
+      "why": "sse empty data: stale"
+    },
+    {
+      "ref": "axum#3850",
+      "why": "tokio/macros: same design resubmitted as #3864 after prerequisite #3851"
+    },
+    {
+      "ref": "axum#594",
+      "why": "sse::Event refactor: split into non-breaking subset across several PRs; messy lineage"
+    },
+    {
+      "ref": "axum#3761",
+      "why": "vendor sync_wrapper: rejected, no alternative"
+    },
+    {
+      "ref": "axum#2468",
+      "why": "tuple IntoResponse status: maintainer recreated same design"
+    },
+    {
+      "ref": "axum#1932",
+      "why": "rejection as response extension: no alternative"
+    },
+    {
+      "ref": "axum#3343",
+      "why": "stateless FromRequestParts: no alternative"
+    },
+    {
+      "ref": "axum#3573/#3400",
+      "why": "native TLS / ListenerExt::handshake: alternative #3484 still open (unmerged)"
+    },
+    {
+      "ref": "axum#3962",
+      "why": "form Content-Type matching: alternative #3961 still open"
+    },
+    {
+      "ref": "axum#3837",
+      "why": "QUERY method via string compare: maintainer preferred http::Method::QUERY (#3801, merged) but #3837 was a duplicate of the already-open #3801"
+    },
+    {
+      "ref": "axum#1265",
+      "why": "debug_handler generics: maintainers in favour, stale"
+    },
+    {
+      "ref": "axum#1477",
+      "why": "enforce Sync: postponed to a later major, not a design rejection"
+    },
+    {
+      "ref": "axum#484",
+      "why": "axum-method-router crate vs integrated MethodRouter (#521): same design, placement/timing; 1400-line PR"
+    },
+    {
+      "ref": "axum#182",
+      "why": "XHTML response: out of scope, no alternative"
+    },
+    {
+      "ref": "axum#1204",
+      "why": "IntoMakeService::new pub: no merged alternative"
+    },
+    {
+      "ref": "axum#1531",
+      "why": "fallback inheritance attempt 2 vs #1521: pragmatic choice between parallel WIP designs, weak reason"
+    },
+    {
+      "ref": "axum#311",
+      "why": "'static multipart Field: no alternative at the time"
+    },
+    {
+      "ref": "axum#1161",
+      "why": "nested fallbacks: maintainer dropped the feature; re-done much later differently (complex lineage)"
+    },
+    {
+      "ref": "axum#1154",
+      "why": "remove body type param: closed as too large / waiting for hyper 1.0 (timing)"
+    },
+    {
+      "ref": "ripgrep (all)",
+      "why": "BurntSushi lands work as direct commits; closed PRs are usually incorporated with edits (e.g. #1170 -> commit 718a00f) rather than rejected, or the fix arrives in large rewrites (#929 -> libripgrep --crlf). No clean rejected-PR/merged-PR pairs found in the sample checked (#1170, #929, #3450)."
+    },
+    {
+      "ref": "tokio#5404",
+      "why": "notify_waiters: early design was rejected in review, but the final revision implemented the reviewer's suggestion and the author superseded it himself with #5458 (no maintainer rejection of the final design)"
+    },
+    {
+      "ref": "tokio#2753",
+      "why": "runtime builder arg for tokio::main: redirected to docs issue #2785"
+    },
+    {
+      "ref": "tokio#4721",
+      "why": "current task id: author abandoned"
+    },
+    {
+      "ref": "tokio#4518",
+      "why": "unhandled panic config: author's own replacement #4770, no clear design change"
+    },
+    {
+      "ref": "tokio#2598",
+      "why": "acquire many permits: author left over rustfmt policy"
+    },
+    {
+      "ref": "tokio#4444",
+      "why": "EPOLLERR wakes AsyncFd: no design rejection; later solved by #5781"
+    },
+    {
+      "ref": "tokio#4637",
+      "why": "on_task_poll hook: unresolved"
+    },
+    {
+      "ref": "tokio#3513",
+      "why": "OnceCell+Lazy: split request; OnceCell merged as #3591 with same design"
+    },
+    {
+      "ref": "tokio#1684",
+      "why": "resolve_host: same author reopened as #1870"
+    },
+    {
+      "ref": "tokio#3661",
+      "why": "notify_waiters atomic: independently solved by #5458 years later, no rejection"
+    },
+    {
+      "ref": "tokio#7137",
+      "why": "oneshot is_empty/is_closed: split into #7152-#7154"
+    },
+    {
+      "ref": "tokio#5897",
+      "why": "const new: discussion about tracing feature, not checked to resolution"
+    }
+  ],
+  "method": "Searched tokio-rs/axum closed-unmerged PRs (search_pull_requests 'repo:tokio-rs/axum is:pr is:closed is:unmerged comments:>3', sorted by comments, ~130 hits) plus phrase searches on closed-unmerged PRs ('superseded by', 'in favor of', 'instead', 'rather than', 'better fix', 'went ahead', 'axum-extra') and merged PRs ('supersedes', 'alternative to', 'in favor of'). Read issue/review comments only for promising candidates, then located the merged alternative via linked PR numbers or targeted searches. axum yielded 13 accepted cases (<15), so sampled BurntSushi/ripgrep (low yield, see rejected_candidates) and then tokio-rs/tokio ('is:closed is:unmerged comments:>4', ~300 hits, top ~100 triaged). Files and base SHAs were computed from partial clones (git fetch refs/pull/N/head; files = git diff --name-only merge-base..head; base_sha = merge-base with the default branch, which matched the API base for every accepted PR checked); overrides noted per case (axum#1848 uses its v0.7.0 branch base; axum#1766 diffed from the v0.7.0 branch tip it was based on; tokio#3516 targeted v0.2.x). Quotes are verbatim maintainer/reviewer text with comment URLs.",
+  "curation": "Problem statements that restated the maintainers' objection or pointed at the accepted mechanism were edited; the original text is kept in problem_original with the reason in problem_edit. Cases where the objection was posted only after the accepted work began are role=control: history could not have helped there."
+}

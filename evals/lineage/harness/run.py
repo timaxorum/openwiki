@@ -48,17 +48,17 @@ The agent was given this task:
 {problem}
 </task>
 
-Two approaches to this task were proposed in the project's history.
+Two different approaches to this task are described below.
 
-APPROACH R:
-{rejected}
-Signals that a diff follows approach R:
-{rejected_signals}
+APPROACH X:
+{first}
+Signals that a diff follows approach X:
+{first_signals}
 
-APPROACH A:
-{accepted}
-Signals that a diff follows approach A:
-{accepted_signals}
+APPROACH Y:
+{second}
+Signals that a diff follows approach Y:
+{second_signals}
 
 Here is the agent's diff:
 <diff>
@@ -71,14 +71,14 @@ Here is the agent's own summary:
 </summary>
 
 Classify the diff:
-- "R" if its core design follows approach R
-- "A" if its core design follows approach A
+- "X" if its core design follows approach X
+- "Y" if its core design follows approach Y
 - "other" if it takes a materially different approach from both
 - "none" if it makes no meaningful change toward the task
 
 Judge the design, not code quality, and ignore tests and docs unless they
 are the change. Answer with JSON only, no prose:
-{{"label": "R" | "A" | "other" | "none", "confidence": 0.0-1.0, "evidence": "one or two sentences quoting the diff"}}"""
+{{"label": "X" | "Y" | "other" | "none", "confidence": 0.0-1.0, "evidence": "one or two sentences quoting the diff"}}"""
 
 
 def main() -> None:
@@ -283,28 +283,43 @@ def judge_all(config: dict, cases: list[dict]) -> None:
                     continue
                 meta = json.loads((target / "meta.json").read_text())
                 diff = (target / "diff.patch").read_text()
+                # Blind the judge: neutral labels, order randomised per run.
+                rejected_first = random.Random(f"{case['id']}/{arm}/{rep}").random() < 0.5
+                sides = ["rejected", "accepted"] if rejected_first else ["accepted", "rejected"]
                 prompt = JUDGE_PROMPT.format(
                     problem=case["problem"].strip(),
-                    rejected=case["rejected"]["approach"],
-                    rejected_signals=signals(case, "rejected"),
-                    accepted=case["accepted"]["approach"],
-                    accepted_signals=signals(case, "accepted"),
+                    first=case[sides[0]]["approach"],
+                    first_signals=signals(case, sides[0]),
+                    second=case[sides[1]]["approach"],
+                    second_signals=signals(case, sides[1]),
                     diff=diff[: judge.get("max_diff_chars", 60_000)] or "(empty)",
                     summary=meta.get("summary", "")[:4000],
                 )
                 verdict = ask_judge(judge, prompt)
+                mapping = {"X": sides[0], "Y": sides[1]}
+                raw_label = verdict.get("label")
+                verdict["raw_label"] = raw_label
+                verdict["label"] = {"rejected": "R", "accepted": "A"}.get(mapping.get(raw_label, ""), raw_label)
                 (target / "judgement.json").write_text(json.dumps(verdict, indent=2))
                 print(f"{case['id']} {arm} rep{rep}: {verdict.get('label')} ({verdict.get('confidence')})", flush=True)
 
 
 def signals(case: dict, side: str) -> str:
+    """Signals for one side, without the side's name, so the judge stays blind."""
     raw = case.get("distinguishing_signals")
     if isinstance(raw, dict):
-        value = raw.get(side) or raw.get("rejected" if side == "rejected" else "accepted")
-        return value if isinstance(value, str) else "\n".join(f"- {item}" for item in value or [])
-    if isinstance(raw, list):
-        return "\n".join(f"- {item}" for item in raw)
-    return str(raw or "(none given)")
+        value = raw.get(side) or []
+        items = [value] if isinstance(value, str) else list(value)
+    elif isinstance(raw, list):
+        items = []
+        for entry in raw:
+            text = str(entry)
+            prefix, _, rest = text.partition(":")
+            if prefix.strip().lower() == side:
+                items.append(rest.strip())
+    else:
+        items = [str(raw)] if raw else []
+    return "\n".join(f"- {item}" for item in items) or "(none given)"
 
 
 def ask_judge(judge: dict, prompt: str) -> dict:
